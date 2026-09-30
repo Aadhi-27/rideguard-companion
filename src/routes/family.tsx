@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ScanFace, Fingerprint, Plus, Check, X, Clock } from "lucide-react";
 import { AppShell, Card } from "@/components/AppShell";
 import { initialFamily, type Member } from "@/lib/demo-data";
+import { BiometricPortal } from "@/components/BiometricPortal";
 
 export const Route = createFileRoute("/family")({
   head: () => ({
@@ -23,6 +24,7 @@ function Family() {
   const [request, setRequest] = useState<"pending" | "approved" | "denied">("pending");
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ name: "", relation: "", age: "" });
+  const [portal, setPortal] = useState<{ id: string; name: string; kind: "face" | "finger" } | null>(null);
 
   const enroll = (id: string, key: "face" | "finger") =>
     setFamily((f) => f.map((m) => (m.id === id ? { ...m, [key]: true } : m)));
@@ -83,7 +85,7 @@ function Family() {
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
               {(["face", "finger"] as const).map((k) => (
-                <button key={k} onClick={() => enroll(m.id, k)} className={`flex items-center justify-center gap-1 rounded-lg border py-2 ${m[k] ? "text-success" : "text-muted-foreground"}`}>
+                <button key={k} onClick={() => setPortal({ id: m.id, name: m.name, kind: k })} className={`flex items-center justify-center gap-1 rounded-lg border py-2 ${m[k] ? "text-success" : "text-muted-foreground"}`}>
                   {k === "face" ? <ScanFace className="h-4 w-4" /> : <Fingerprint className="h-4 w-4" />}
                   {m[k] ? "Enrolled" : `Enroll ${k === "face" ? "face" : "fingerprint"}`}
                 </button>
@@ -92,6 +94,14 @@ function Family() {
           </Card>
         ))}
       </div>
+      {portal && (
+        <BiometricPortal
+          kind={portal.kind}
+          name={portal.name}
+          onClose={() => setPortal(null)}
+          onDone={() => { enroll(portal.id, portal.kind); setPortal(null); }}
+        />
+      )}
     </AppShell>
   );
 }
