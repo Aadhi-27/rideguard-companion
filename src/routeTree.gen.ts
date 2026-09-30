@@ -10,33 +10,90 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CamerasRouteImport } from './routes/cameras'
+import { Route as ConditionRouteImport } from './routes/condition'
+import { Route as FamilyRouteImport } from './routes/family'
+import { Route as SosRouteImport } from './routes/sos'
+import { Route as TrackingRouteImport } from './routes/tracking'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CamerasRoute = CamerasRouteImport.update({
+  id: '/cameras',
+  path: '/cameras',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConditionRoute = ConditionRouteImport.update({
+  id: '/condition',
+  path: '/condition',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FamilyRoute = FamilyRouteImport.update({
+  id: '/family',
+  path: '/family',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SosRoute = SosRouteImport.update({
+  id: '/sos',
+  path: '/sos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TrackingRoute = TrackingRouteImport.update({
+  id: '/tracking',
+  path: '/tracking',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/cameras': typeof CamerasRoute
+  '/condition': typeof ConditionRoute
+  '/family': typeof FamilyRoute
+  '/sos': typeof SosRoute
+  '/tracking': typeof TrackingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/cameras': typeof CamerasRoute
+  '/condition': typeof ConditionRoute
+  '/family': typeof FamilyRoute
+  '/sos': typeof SosRoute
+  '/tracking': typeof TrackingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/cameras': typeof CamerasRoute
+  '/condition': typeof ConditionRoute
+  '/family': typeof FamilyRoute
+  '/sos': typeof SosRoute
+  '/tracking': typeof TrackingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/cameras' | '/condition' | '/family' | '/sos' | '/tracking'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/cameras' | '/condition' | '/family' | '/sos' | '/tracking'
+  id:
+    | '__root__'
+    | '/'
+    | '/cameras'
+    | '/condition'
+    | '/family'
+    | '/sos'
+    | '/tracking'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CamerasRoute: typeof CamerasRoute
+  ConditionRoute: typeof ConditionRoute
+  FamilyRoute: typeof FamilyRoute
+  SosRoute: typeof SosRoute
+  TrackingRoute: typeof TrackingRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +105,51 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cameras': {
+      id: '/cameras'
+      path: '/cameras'
+      fullPath: '/cameras'
+      preLoaderRoute: typeof CamerasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/condition': {
+      id: '/condition'
+      path: '/condition'
+      fullPath: '/condition'
+      preLoaderRoute: typeof ConditionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/family': {
+      id: '/family'
+      path: '/family'
+      fullPath: '/family'
+      preLoaderRoute: typeof FamilyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sos': {
+      id: '/sos'
+      path: '/sos'
+      fullPath: '/sos'
+      preLoaderRoute: typeof SosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tracking': {
+      id: '/tracking'
+      path: '/tracking'
+      fullPath: '/tracking'
+      preLoaderRoute: typeof TrackingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CamerasRoute: CamerasRoute,
+  ConditionRoute: ConditionRoute,
+  FamilyRoute: FamilyRoute,
+  SosRoute: SosRoute,
+  TrackingRoute: TrackingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
