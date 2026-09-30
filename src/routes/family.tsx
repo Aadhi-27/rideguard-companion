@@ -54,7 +54,7 @@ function Family() {
       {adding && (
         <Card className="mt-3 space-y-2">
           {(["name", "relation", "age"] as const).map((k) => (
-            <input key={k} placeholder={k[0].toUpperCase() + k.slice(1)} value={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
+            <input key={k} placeholder={k.charAt(0).toUpperCase() + k.slice(1)} value={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
           ))}
           <button
             onClick={() => {

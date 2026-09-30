@@ -28,7 +28,7 @@ function Tracking() {
     const t = setInterval(() => setI((v) => (v + 1) % route.length), 1200);
     return () => clearInterval(t);
   }, []);
-  const [x, y] = route[i];
+  const [x, y] = route[i] ?? route[0]!;
   const speed = [0, 22, 31, 38, 34, 41, 28, 19][i];
 
   return (
