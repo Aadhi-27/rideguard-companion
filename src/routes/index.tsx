@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ScanFace, Fingerprint, Lock, Unlock, Battery, Fuel, Gauge, MapPin, AlertTriangle } from "lucide-react";
 import { AppShell, Card } from "@/components/AppShell";
 import { vehicle, parts } from "@/lib/demo-data";
+import { FaceUnlock } from "@/components/FaceUnlock";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -23,10 +24,14 @@ type Step = "locked" | "scanning" | "unlocked";
 function Home() {
   const [state, setState] = useState<Step>("locked");
   const [method, setMethod] = useState<"face" | "finger">("face");
+  const [faceOpen, setFaceOpen] = useState(false);
+  const [rider, setRider] = useState("Dhivya");
   const alerts = parts.filter((p) => p.status !== "good");
 
   const scan = (m: "face" | "finger") => {
     setMethod(m);
+    if (m === "face") { setFaceOpen(true); return; }
+    setRider("Dhivya");
     setState("scanning");
     setTimeout(() => setState("unlocked"), 1800);
   };
@@ -51,7 +56,7 @@ function Home() {
             )}
           </div>
           <p className="mt-3 font-display text-lg font-semibold">
-            {state === "unlocked" ? "Welcome, Dhivya. Ignition on" : state === "scanning" ? "Verifying…" : "Vehicle locked"}
+            {state === "unlocked" ? `Welcome, ${rider}. Ignition on` : state === "scanning" ? "Verifying…" : "Vehicle locked"}
           </p>
         </div>
         {state === "unlocked" ? (
@@ -99,6 +104,12 @@ function Home() {
           ))}
         </Card>
       </Link>
+      {faceOpen && (
+        <FaceUnlock
+          onClose={() => setFaceOpen(false)}
+          onMatch={(m) => { setRider(m.minor ? `${m.name} (parent approval rules apply)` : m.name); setFaceOpen(false); setState("unlocked"); }}
+        />
+      )}
       <p className="mt-6 text-center text-xs text-muted-foreground">Demo mode: all readings are sample data.</p>
     </AppShell>
   );
