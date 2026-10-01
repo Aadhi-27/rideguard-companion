@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ScanFace, Fingerprint, X, CheckCircle2, AlertTriangle } from "lucide-react";
+import { snapshot } from "@/lib/camera";
 
 type Props = { kind: "face" | "finger"; name: string; onClose: () => void; onDone: (photo?: string) => void };
 
@@ -23,7 +24,6 @@ export function BiometricPortal({ kind, name, onClose, onDone }: Props) {
 
 function FaceScan({ onDone }: { onDone: (photo: string) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
@@ -66,11 +66,10 @@ function FaceScan({ onDone }: { onDone: (photo: string) => void }) {
         )}
         {scanning && <div className="scanline absolute left-0 h-1 w-full bg-accent" />}
       </div>
-      <canvas ref={canvasRef} className="hidden" />
       {photo ? (
         <>
           <Msg text="Face captured and enrolled." />
-          <button onClick={onDone} className="mt-3 w-full rounded-xl bg-primary py-3 font-semibold text-primary-foreground">Save</button>
+          <button onClick={() => onDone(photo)} className="mt-3 w-full rounded-xl bg-primary py-3 font-semibold text-primary-foreground">Save</button>
         </>
       ) : (
         <>
