@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { ScanFace, Fingerprint, Plus, Check, X, Clock } from "lucide-react";
 import { AppShell, Card } from "@/components/AppShell";
-import { initialFamily, type Member } from "@/lib/demo-data";
+import { useFamily } from "@/lib/family-store";
 import { BiometricPortal } from "@/components/BiometricPortal";
 
 export const Route = createFileRoute("/family")({
@@ -20,14 +20,14 @@ export const Route = createFileRoute("/family")({
 });
 
 function Family() {
-  const [family, setFamily] = useState<Member[]>(initialFamily);
+  const [family, setFamily] = useFamily();
   const [request, setRequest] = useState<"pending" | "approved" | "denied">("pending");
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ name: "", relation: "", age: "" });
   const [portal, setPortal] = useState<{ id: string; name: string; kind: "face" | "finger" } | null>(null);
 
-  const enroll = (id: string, key: "face" | "finger") =>
-    setFamily((f) => f.map((m) => (m.id === id ? { ...m, [key]: true } : m)));
+  const enroll = (id: string, key: "face" | "finger", photo?: string) =>
+    setFamily((f) => f.map((m) => (m.id === id ? { ...m, [key]: true, ...(photo ? { photo } : {}) } : m)));
 
   return (
     <AppShell title="Family">
@@ -99,7 +99,7 @@ function Family() {
           kind={portal.kind}
           name={portal.name}
           onClose={() => setPortal(null)}
-          onDone={() => { enroll(portal.id, portal.kind); setPortal(null); }}
+          onDone={(photo) => { enroll(portal.id, portal.kind, photo); setPortal(null); }}
         />
       )}
     </AppShell>
