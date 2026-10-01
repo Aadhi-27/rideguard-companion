@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ScanFace, Fingerprint, X, CheckCircle2, AlertTriangle } from "lucide-react";
 
-type Props = { kind: "face" | "finger"; name: string; onClose: () => void; onDone: () => void };
+type Props = { kind: "face" | "finger"; name: string; onClose: () => void; onDone: (photo?: string) => void };
 
 export function BiometricPortal({ kind, name, onClose, onDone }: Props) {
   return (
@@ -15,13 +15,13 @@ export function BiometricPortal({ kind, name, onClose, onDone }: Props) {
           <button aria-label="Close" onClick={onClose} className="rounded-full border p-1"><X className="h-4 w-4" /></button>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">For {name}</p>
-        {kind === "face" ? <FaceScan onDone={onDone} /> : <FingerScan name={name} onDone={onDone} />}
+        {kind === "face" ? <FaceScan onDone={onDone} /> : <FingerScan name={name} onDone={() => onDone()} />}
       </div>
     </div>
   );
 }
 
-function FaceScan({ onDone }: { onDone: () => void }) {
+function FaceScan({ onDone }: { onDone: (photo: string) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -45,13 +45,11 @@ function FaceScan({ onDone }: { onDone: () => void }) {
   }, []);
 
   const capture = () => {
-    const v = videoRef.current, c = canvasRef.current;
-    if (!v || !c || !v.videoWidth) return;
+    const v = videoRef.current;
+    if (!v || !v.videoWidth) return;
     setScanning(true);
     setTimeout(() => {
-      c.width = v.videoWidth; c.height = v.videoHeight;
-      c.getContext("2d")?.drawImage(v, 0, 0);
-      setPhoto(c.toDataURL("image/jpeg", 0.8));
+      setPhoto(snapshot(v));
       setScanning(false);
       (v.srcObject as MediaStream | null)?.getTracks().forEach((t) => t.stop());
     }, 1500);
