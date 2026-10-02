@@ -14,7 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      rider_locations: {
+        Row: {
+          display_name: string
+          has_rideguard: boolean
+          lat: number
+          lng: number
+          sharing: boolean
+          updated_at: string
+          user_id: string
+          vehicle: string
+        }
+        Insert: {
+          display_name?: string
+          has_rideguard?: boolean
+          lat: number
+          lng: number
+          sharing?: boolean
+          updated_at?: string
+          user_id: string
+          vehicle?: string
+        }
+        Update: {
+          display_name?: string
+          has_rideguard?: boolean
+          lat?: number
+          lng?: number
+          sharing?: boolean
+          updated_at?: string
+          user_id?: string
+          vehicle?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
