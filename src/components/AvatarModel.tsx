@@ -14,7 +14,7 @@ function Character({ speaking, listening }: { speaking: boolean; listening: bool
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
-    if (root.current) { root.current.position.y = Math.sin(t * 2) * 0.06; root.current.rotation.y = Math.sin(t * 0.7) * 0.35; }
+    if (root.current) { root.current.position.y = -1.0 + Math.sin(t * 2) * 0.06; root.current.rotation.y = Math.sin(t * 0.7) * 0.35; }
     if (head.current) head.current.rotation.z = listening ? Math.sin(t * 1.5) * 0.12 : Math.sin(t) * 0.04;
     if (mouth.current) mouth.current.scale.y = speaking ? 0.4 + Math.abs(Math.sin(t * 18)) * 1.6 : 0.3;
     const blink = t % 3.5 < 0.12 ? 0.1 : 1;
@@ -27,7 +27,7 @@ function Character({ speaking, listening }: { speaking: boolean; listening: bool
 
   const skin = "#ffe0c9", hair = "#ff6a2b", suit = "#1f2a44", eye = "#2a1a5e";
   return (
-    <group ref={root} position={[0, -1.6, 0]} scale={0.85}>
+    <group ref={root} position={[0, -1.0, 0]}>
       {/* body */}
       <mesh position={[0, 0.35, 0]}><capsuleGeometry args={[0.32, 0.45, 8, 16]} /><meshToonMaterial color={suit} /></mesh>
       <mesh position={[0, 0.62, 0.2]}><boxGeometry args={[0.25, 0.08, 0.1]} /><meshToonMaterial color={hair} /></mesh>
