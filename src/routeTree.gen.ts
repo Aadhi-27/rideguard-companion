@@ -10,15 +10,22 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CamerasRouteImport } from './routes/cameras'
 import { Route as ConditionRouteImport } from './routes/condition'
 import { Route as FamilyRouteImport } from './routes/family'
+import { Route as NearbyRouteImport } from './routes/nearby'
 import { Route as SosRouteImport } from './routes/sos'
 import { Route as TrackingRouteImport } from './routes/tracking'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CamerasRoute = CamerasRouteImport.update({
@@ -36,6 +43,11 @@ const FamilyRoute = FamilyRouteImport.update({
   path: '/family',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NearbyRoute = NearbyRouteImport.update({
+  id: '/nearby',
+  path: '/nearby',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SosRoute = SosRouteImport.update({
   id: '/sos',
   path: '/sos',
@@ -49,49 +61,75 @@ const TrackingRoute = TrackingRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/cameras': typeof CamerasRoute
   '/condition': typeof ConditionRoute
   '/family': typeof FamilyRoute
+  '/nearby': typeof NearbyRoute
   '/sos': typeof SosRoute
   '/tracking': typeof TrackingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/cameras': typeof CamerasRoute
   '/condition': typeof ConditionRoute
   '/family': typeof FamilyRoute
+  '/nearby': typeof NearbyRoute
   '/sos': typeof SosRoute
   '/tracking': typeof TrackingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/cameras': typeof CamerasRoute
   '/condition': typeof ConditionRoute
   '/family': typeof FamilyRoute
+  '/nearby': typeof NearbyRoute
   '/sos': typeof SosRoute
   '/tracking': typeof TrackingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/cameras' | '/condition' | '/family' | '/sos' | '/tracking'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/cameras' | '/condition' | '/family' | '/sos' | '/tracking'
-  id:
-    | '__root__'
+  fullPaths:
     | '/'
+    | '/auth'
     | '/cameras'
     | '/condition'
     | '/family'
+    | '/nearby'
+    | '/sos'
+    | '/tracking'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/auth'
+    | '/cameras'
+    | '/condition'
+    | '/family'
+    | '/nearby'
+    | '/sos'
+    | '/tracking'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth'
+    | '/cameras'
+    | '/condition'
+    | '/family'
+    | '/nearby'
     | '/sos'
     | '/tracking'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRoute
   CamerasRoute: typeof CamerasRoute
   ConditionRoute: typeof ConditionRoute
   FamilyRoute: typeof FamilyRoute
+  NearbyRoute: typeof NearbyRoute
   SosRoute: typeof SosRoute
   TrackingRoute: typeof TrackingRoute
 }
@@ -103,6 +141,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cameras': {
@@ -126,6 +171,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FamilyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/nearby': {
+      id: '/nearby'
+      path: '/nearby'
+      fullPath: '/nearby'
+      preLoaderRoute: typeof NearbyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sos': {
       id: '/sos'
       path: '/sos'
@@ -145,9 +197,11 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRoute,
   CamerasRoute: CamerasRoute,
   ConditionRoute: ConditionRoute,
   FamilyRoute: FamilyRoute,
+  NearbyRoute: NearbyRoute,
   SosRoute: SosRoute,
   TrackingRoute: TrackingRoute,
 }

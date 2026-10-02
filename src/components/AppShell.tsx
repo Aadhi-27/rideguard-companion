@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { Home, MapPin, Box, Camera, Users, Siren, Moon, Sun } from "lucide-react";
+import { Home, MapPin, Box, Camera, Users, Siren, Moon, Sun, Radar } from "lucide-react";
 
 const nav = [
   { to: "/", label: "Home", icon: Home },
@@ -48,7 +48,7 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
         </div>
       </header>
       <main className="flex-1 px-5 py-5">{children}</main>
-      <nav className="fixed bottom-0 left-1/2 z-20 grid w-full max-w-md -translate-x-1/2 grid-cols-5 border-t bg-card">
+      <nav className="fixed bottom-0 left-1/2 z-20 grid w-full max-w-md -translate-x-1/2 grid-cols-6 border-t bg-card">
         {nav.map(({ to, label, icon: Icon }) => (
           <Link
             key={to}
