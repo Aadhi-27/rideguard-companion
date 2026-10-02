@@ -9,10 +9,16 @@ export type LiveConfig = {
   liveModel: string;
   backendModel: string;
   openingInstructions?: string;
+  riderName?: string;
 };
 
 // Fill from co-loaded knowledge: the gateway URL, the Live model and the resolved chat model.
-const liveSettings = { baseURL: "", liveModel: "", backendModel: "" };
+const liveSettings = { baseURL: "https://ai.gateway.lovable.dev/v1", liveModel: "openai/gpt-live-1", backendModel: "openai/gpt-6-astra" };
+
+export function riderFromUrl(url: string) {
+  const n = new URL(url, "http://x").searchParams.get("rider")?.replace(/[^\p{L}\p{N} .'-]/gu, "").slice(0, 40).trim();
+  return n || undefined;
+}
 
 export type LiveSocket = {
   readonly readyState: number;
@@ -95,7 +101,7 @@ function workerSocket(socket: WorkerSocket): LiveSocket {
 export function handleLiveRequest(request: Request): Response {
   const waitUntil = (request as Request & Partial<LiveExecutionContext>).waitUntil;
   if (!waitUntil) return new Response("Live runtime unavailable", { status: 503 });
-  const config = getLiveConfig();
+  const config = { ...getLiveConfig(), riderName: riderFromUrl(request.url) };
   const rejected = validateLiveUpgrade(request);
   if (rejected) return rejected;
   const pair = new WebSocketPair();
@@ -111,35 +117,25 @@ export function handleLiveRequest(request: Request): Response {
   return new Response(null, response);
 }
 
-const conversationInstructions = `You are Mira, a calm learning companion.
-Speak naturally in brief replies. Ask a focused question when details are unclear.
+const PAGES = ["home", "tracking", "condition", "cameras", "family", "nearby", "sos"] as const;
+
+function conversationInstructions(config: LiveConfig) {
+  return `You are Kavi, the friendly anime-style voice assistant of RideGuard, a two-wheeler safety app in Tamil Nadu.
+Language: Reply in the language the rider uses: Tamil (natural spoken Tamil) or Indian English. Mixed Tanglish is fine if the rider mixes.
+${config.riderName ? `Face check: the camera recognised the rider as ${config.riderName}. Greet them by name.` : "Face check: no enrolled face was recognised, so do not assume the rider's name."}
+App pages: home (face/fingerprint unlock, battery, fuel), tracking (live map, emergency shutdown), condition (3D bike health), cameras (360 view), family (members, faces, fingerprints, minor approval), nearby (riders sharing location), sos (Tamil Nadu emergency help).
+All vehicle readings are demo data; say so if asked for readings. For a real emergency tell them to call 112 and open the SOS page.
+Speak warmly in short replies. Ask one focused question when unclear.
 Backchannel policy: Use moderate listening sounds without taking over.
 Interruption policy: Stop your answer and listen when the user interrupts.
 Delegation policy:
-Backend tools: Reason through questions and plan study sessions across days.
-Delegate to the backend when: The user wants a study schedule or careful reasoning,
-or a correction changes a question already being worked on.
-Do not delegate to the backend when: Greeting, clarifying a question, or repeating
-a still-current answer. Wait for the backend result before presenting its answer.`;
-
-const studyScheduleInput = z
-  .object({
-    total_minutes: z.number().int().min(1).max(10_080),
-    days: z.number().int().min(1).max(30),
-  })
-  .strict();
-
-function planStudySchedule(args: z.infer<typeof studyScheduleInput>) {
-  const daily = Math.floor(args.total_minutes / args.days);
-  return {
-    total_minutes: args.total_minutes,
-    days: args.days,
-    sessions: Array.from({ length: args.days }, (_, index) => ({
-      day: index + 1,
-      minutes: daily + (index < args.total_minutes % args.days ? 1 : 0),
-    })),
-  };
+Backend tools: Open an app page for the rider, and reason about app or bike questions.
+Delegate to the backend when: The rider asks to go to, open or show a page or feature, or asks something needing careful reasoning.
+Do not delegate to the backend when: Greeting, small talk, or clarifying. Wait for the backend result before saying a page opened.`;
 }
+
+const openPageInput = z.object({ page: z.string() }).strict();
+type PageResult = { page: string };
 
 function isListeningSound(text: string) {
   const normalized = text.toLowerCase().replace(/[\s\p{Pd}]/gu, "");
@@ -152,7 +148,7 @@ async function answerQuestion(
   correlation: { runID: string; sessionID: string | undefined; delegationID: string },
   signal: AbortSignal,
   consumeInput: () => void,
-  onPlan: (plan: ReturnType<typeof planStudySchedule>) => void,
+  onPlan: (plan: PageResult) => void,
 ) {
   signal.throwIfAborted();
   const provider = createOpenAI({
@@ -200,23 +196,21 @@ async function answerQuestion(
       },
     },
     system:
-      "Help a spoken learning companion answer the latest user question. " +
-      "Transcripts may be incomplete or corrected. Use the latest correction. " +
-      "Continue from completed tool results; do not repeat completed actions. " +
-      "Return verified facts and useful next steps in at most 150 words. " +
-      "To display a study schedule for the current request, call plan_study_schedule with its total minutes and days. " +
-      "Ask for missing details instead of guessing. The tool only calculates a draft plan; " +
-      "it does not save calendar events. You have no other tools.",
+      "Help Kavi, the RideGuard voice assistant, act on the rider's latest request. " +
+      "Transcripts may be incomplete or corrected. Use the latest correction. Do not repeat completed actions. " +
+      "To open a page call open_app_page with one of: " + PAGES.join(", ") + ". " +
+      "Reply in the rider's language (Tamil or English) in at most 80 words. Vehicle readings are demo data.",
     messages,
     tools: {
-      plan_study_schedule: tool({
-        description: "Distribute a total study time evenly across days and return a draft schedule.",
-        inputSchema: studyScheduleInput,
-        execute: async (args) => {
+      open_app_page: tool({
+        description: "Navigate the rider's app screen to a page.",
+        inputSchema: openPageInput,
+        execute: async ({ page }) => {
           signal.throwIfAborted();
-          const plan = planStudySchedule(args);
-          onPlan(plan);
-          return plan;
+          const p = page.toLowerCase().trim();
+          if (!(PAGES as readonly string[]).includes(p)) return { ok: false, error: `Unknown page. Use: ${PAGES.join(", ")}` };
+          onPlan({ page: p });
+          return { ok: true, opened: p };
         },
       }),
     },
@@ -285,7 +279,7 @@ export function bindLiveConnection(
   let task: AbortController | undefined;
   const pendingDelegations: Array<{
     event: ProviderEvent;
-    plan?: ReturnType<typeof planStudySchedule>;
+    plan?: PageResult;
   }> = [];
   let completedDelegation: (typeof pendingDelegations)[number] | undefined;
   const backendMessages: ModelMessage[] = [];
@@ -406,7 +400,7 @@ export function bindLiveConnection(
     restartTimer = setTimeout(() => void runDelegation(), 300);
   }
 
-  function deliverResult(delegationID: string, answer: string, plan?: ReturnType<typeof planStudySchedule>) {
+  function deliverResult(delegationID: string, answer: string, plan?: PageResult) {
     if (closing) return;
     if (gateway?.readyState !== 1) return stop();
     try {
@@ -420,7 +414,7 @@ export function bindLiveConnection(
           }),
         );
       }
-      if (plan) emit({ type: "app.study_schedule.plan", delegation_id: delegationID, plan });
+      if (plan) emit({ type: "app.navigate", delegation_id: delegationID, page: plan.page });
       completedDelegation = pendingDelegations.shift();
     } catch {
       stop();
@@ -595,7 +589,7 @@ export function bindLiveConnection(
         type: "session.start",
         session: {
           model: config.liveModel,
-          instructions: conversationInstructions,
+          instructions: conversationInstructions(config),
           audio: { output: { voice: "marin" } },
           delegation: { type: "client" },
         },
