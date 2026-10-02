@@ -27,7 +27,7 @@ function Character({ speaking, listening }: { speaking: boolean; listening: bool
 
   const skin = "#ffe0c9", hair = "#ff6a2b", suit = "#1f2a44", eye = "#2a1a5e";
   return (
-    <group ref={root} position={[0, -1.05, 0]}>
+    <group ref={root} position={[0, -1.6, 0]} scale={0.85}>
       {/* body */}
       <mesh position={[0, 0.35, 0]}><capsuleGeometry args={[0.32, 0.45, 8, 16]} /><meshToonMaterial color={suit} /></mesh>
       <mesh position={[0, 0.62, 0.2]}><boxGeometry args={[0.25, 0.08, 0.1]} /><meshToonMaterial color={hair} /></mesh>
