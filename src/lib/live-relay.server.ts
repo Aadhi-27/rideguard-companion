@@ -9,7 +9,7 @@ export type LiveConfig = {
   liveModel: string;
   backendModel: string;
   openingInstructions?: string;
-  riderName?: string;
+  riderName?: string | undefined;
 };
 
 // Fill from co-loaded knowledge: the gateway URL, the Live model and the resolved chat model.

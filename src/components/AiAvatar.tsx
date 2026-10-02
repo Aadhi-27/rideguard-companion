@@ -44,7 +44,8 @@ export function AiAvatar() {
       speakTimer.current = setTimeout(() => setSpeaking(false), 900);
     }
     if (ev.type === "session.input_transcript.delta" && ev.delta) { setHeard((s) => (s + ev.delta).slice(-160)); setSaid(""); }
-    if (ev.type === "app.navigate" && ev.page && ROUTES[ev.page]) navigate({ to: ROUTES[ev.page] });
+    const dest = ev.type === "app.navigate" && ev.page ? ROUTES[ev.page] : undefined;
+    if (dest) navigate({ to: dest });
   };
   const voice = useLiveVoice({ url, onEvent });
   const idle = voice.status === "idle" || voice.status === "closed";

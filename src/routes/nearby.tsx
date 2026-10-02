@@ -52,7 +52,7 @@ function Nearby() {
         if (Date.now() - last < 10000) return;
         last = Date.now();
         const { error } = await supabase.from("rider_locations").upsert({
-          user_id: user.id, display_name: user.user_metadata?.full_name ?? user.email?.split("@")[0] ?? "Rider",
+          user_id: user.id, display_name: user.user_metadata?.["full_name"] ?? user.email?.split("@")[0] ?? "Rider",
           vehicle: hasRG ? vehicle.name : "Phone only", has_rideguard: hasRG, ...pos, sharing: true, updated_at: new Date().toISOString(),
         });
         if (error) setErr("Couldn't share your location. Try again.");
