@@ -8,6 +8,7 @@ const nav = [
   { to: "/condition", label: "3D", icon: Box },
   { to: "/cameras", label: "360°", icon: Camera },
   { to: "/family", label: "Family", icon: Users },
+  { to: "/nearby", label: "Nearby", icon: Radar },
 ] as const;
 
 export function AppShell({ title, children }: { title: string; children: ReactNode }) {
