@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 import type { ErrorComponentProps } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
+import { AiAvatar } from "@/components/AiAvatar";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
@@ -118,6 +119,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+      <AiAvatar />
     </QueryClientProvider>
   );
 }
