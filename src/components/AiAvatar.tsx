@@ -87,7 +87,7 @@ export function AiAvatar() {
       <button
         aria-label="Open Kavi assistant"
         onClick={() => setOpen(true)}
-        className={`avatar-walk fixed z-40 h-32 w-24 ${spot}`}
+        className={`avatar-walk fixed z-40 h-36 w-28 ${spot}`}
       >
         {mounted && <Suspense fallback={null}><AvatarModel speaking={speaking} listening={voice.status === "connected" && !speaking} /></Suspense>}
         {voice.status === "connected" && <span className="absolute -top-1 left-1/2 -translate-x-1/2 rounded-full bg-success px-2 text-[10px] font-bold text-primary-foreground">LIVE</span>}

@@ -27,7 +27,7 @@ function Character({ speaking, listening }: { speaking: boolean; listening: bool
 
   const skin = "#ffe0c9", hair = "#ff6a2b", suit = "#1f2a44", eye = "#2a1a5e";
   return (
-    <group ref={root} position={[0, -0.6, 0]}>
+    <group ref={root} position={[0, -1.05, 0]}>
       {/* body */}
       <mesh position={[0, 0.35, 0]}><capsuleGeometry args={[0.32, 0.45, 8, 16]} /><meshToonMaterial color={suit} /></mesh>
       <mesh position={[0, 0.62, 0.2]}><boxGeometry args={[0.25, 0.08, 0.1]} /><meshToonMaterial color={hair} /></mesh>
@@ -62,7 +62,7 @@ function Character({ speaking, listening }: { speaking: boolean; listening: bool
 
 export default function AvatarModel({ speaking, listening }: { speaking: boolean; listening: boolean }) {
   return (
-    <Canvas camera={{ position: [0, 0.6, 3.2], fov: 35 }} gl={{ alpha: true }} dpr={[1, 2]}>
+    <Canvas camera={{ position: [0, 0.2, 4.4], fov: 35 }} gl={{ alpha: true }} dpr={[1, 2]}>
       <ambientLight intensity={0.8} />
       <directionalLight position={[2, 3, 3]} intensity={1.4} />
       <Character speaking={speaking} listening={listening} />
