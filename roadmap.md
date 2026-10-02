@@ -1,5 +1,6 @@
-# Roadmap
-
-- [x] Home face unlock matches faces enrolled on Family page
-- [ ] Nearby vehicles page: sign-in, riders share real location (consent), Google map of nearby RideGuard users
-- [ ] 3D anime AI avatar on every page: Tamil + English live voice, sees camera, answers about app, navigates pages
+# RideGuard roadmap
+- [x] Home face unlock matches faces saved on Family page
+- [x] Nearby vehicles + rider locations (sign-in, consent)
+- [x] Kavi 3D anime voice assistant on every page (Tamil/English, recognises rider via camera, opens pages)
+- [ ] Live voice test with a real microphone — needs the user to try it in the preview
+- [ ] More Indian languages beyond Tamil/English — waiting on the user to choose which ones
