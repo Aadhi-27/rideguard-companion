@@ -14,6 +14,21 @@ import appCss from "../styles.css?url";
 import { AiAvatar } from "@/components/AiAvatar";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
+// After a new version is published, an open tab may ask for old page files that
+// no longer exist. Reload once to pick up the new version instead of a blank screen.
+function isStaleChunkError(e: unknown) {
+  const msg = e instanceof Error ? e.message : String(e);
+  return /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module/i.test(msg);
+}
+function reloadOnce() {
+  const key = "rg-chunk-reload";
+  const last = Number(sessionStorage.getItem(key) || 0);
+  if (Date.now() - last < 10_000) return false;
+  sessionStorage.setItem(key, String(Date.now()));
+  window.location.reload();
+  return true;
+}
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -40,6 +55,7 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
+    if (isStaleChunkError(error) && reloadOnce()) return;
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
@@ -114,6 +130,12 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useEffect(() => {
+    const onPreload = (e: Event) => { e.preventDefault(); reloadOnce(); };
+    window.addEventListener("vite:preloadError", onPreload);
+    return () => window.removeEventListener("vite:preloadError", onPreload);
+  }, []);
+
 
   return (
     <QueryClientProvider client={queryClient}>
