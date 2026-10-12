@@ -6,9 +6,9 @@ import { verifyFace } from "@/lib/face.functions";
 import { readFamily, type StoredMember } from "@/lib/family-store";
 import { snapshot } from "@/lib/camera";
 
-type Props = { onClose: () => void; onMatch: (m: StoredMember) => void };
+type Props = { onClose: () => void; onMatch: (m: StoredMember) => void; onReject?: () => void };
 
-export function FaceUnlock({ onClose, onMatch }: Props) {
+export function FaceUnlock({ onClose, onMatch, onReject }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [enrolled, setEnrolled] = useState<StoredMember[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +36,7 @@ export function FaceUnlock({ onClose, onMatch }: Props) {
     try {
       const r = await verify({ data: { probe: snapshot(v), candidates: enrolled.map((m) => ({ id: m.id, name: m.name, photo: m.photo! })) } });
       if (!r.ok) setError(r.error);
-      else if (!r.matchId) setError("Face not recognised. Vehicle stays locked.");
+      else if (!r.matchId) { if (onReject) onReject(); else setError("Face not recognised. Vehicle stays locked."); }
       else onMatch(enrolled.find((m) => m.id === r.matchId)!);
     } catch {
       setError("Face check failed. Try again.");
