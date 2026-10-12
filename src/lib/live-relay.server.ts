@@ -129,13 +129,13 @@ Speak warmly in short replies. Ask one focused question when unclear.
 Backchannel policy: Use moderate listening sounds without taking over.
 Interruption policy: Stop your answer and listen when the user interrupts.
 Delegation policy:
-Backend tools: Open an app page for the rider, and reason about app or bike questions.
-Delegate to the backend when: The rider asks to go to, open or show a page or feature, or asks something needing careful reasoning.
-Do not delegate to the backend when: Greeting, small talk, or clarifying. Wait for the backend result before saying a page opened.`;
+Backend tools: Open an app page for the rider, start or lock the bike, and reason about app or bike questions.
+Delegate to the backend when: The rider asks to go to, open or show a page or feature, to start/unlock or lock the bike (in Tamil or English), or asks something needing careful reasoning.
+Do not delegate to the backend when: Greeting, small talk, or clarifying. Wait for the backend result before saying a page opened or the bike started.`;
 }
 
 const openPageInput = z.object({ page: z.string() }).strict();
-type PageResult = { page: string };
+type PageResult = { page: string; action?: "start" | "lock" };
 
 function isListeningSound(text: string) {
   const normalized = text.toLowerCase().replace(/[\s\p{Pd}]/gu, "");
@@ -199,6 +199,7 @@ async function answerQuestion(
       "Help Kavi, the RideGuard voice assistant, act on the rider's latest request. " +
       "Transcripts may be incomplete or corrected. Use the latest correction. Do not repeat completed actions. " +
       "To open a page call open_app_page with one of: " + PAGES.join(", ") + ". " +
+      "Spoken commands may be Tamil or English, e.g. 'Kavi, start the bike' / 'வண்டியை ஸ்டார்ட் பண்ணு' → control_bike start; 'lock the bike' / 'வண்டியை லாக் பண்ணு' → control_bike lock; 'show nearby riders' / 'பக்கத்துல யாரு இருக்காங்க' → open_app_page nearby. " +
       "Reply in the rider's language (Tamil or English) in at most 80 words. Vehicle readings are demo data.",
     messages,
     tools: {
@@ -211,6 +212,18 @@ async function answerQuestion(
           if (!(PAGES as readonly string[]).includes(p)) return { ok: false, error: `Unknown page. Use: ${PAGES.join(", ")}` };
           onPlan({ page: p });
           return { ok: true, opened: p };
+        },
+      }),
+      control_bike: tool({
+        description: "Start (unlock ignition) or lock the rider's bike.",
+        inputSchema: z.object({ action: z.enum(["start", "lock"]) }).strict(),
+        execute: async ({ action }) => {
+          signal.throwIfAborted();
+          // Voice alone is not proof of identity: only start if the camera recognised an enrolled rider.
+          if (action === "start" && !config.riderName)
+            return { ok: false, error: "Cannot start: the rider's face was not recognised. Ask them to use Face unlock on the home page." };
+          onPlan({ page: "home", action });
+          return { ok: true, done: action };
         },
       }),
     },
@@ -414,7 +427,7 @@ export function bindLiveConnection(
           }),
         );
       }
-      if (plan) emit({ type: "app.navigate", delegation_id: delegationID, page: plan.page });
+      if (plan) emit({ type: "app.navigate", delegation_id: delegationID, page: plan.page, action: plan.action });
       completedDelegation = pendingDelegations.shift();
     } catch {
       stop();

@@ -46,11 +46,27 @@ export function AiAvatar() {
     if (ev.type === "session.input_transcript.delta" && ev.delta) { setHeard((s) => (s + ev.delta).slice(-160)); setSaid(""); }
     const dest = ev.type === "app.navigate" && ev.page ? ROUTES[ev.page] : undefined;
     if (dest) navigate({ to: dest });
+    const action = (ev as { action?: string }).action;
+    if (ev.type === "app.navigate" && (action === "start" || action === "lock"))
+      setTimeout(() => window.dispatchEvent(new CustomEvent("rideguard:bike", { detail: { action } })), 300);
   };
   const voice = useLiveVoice({ url, onEvent });
   const idle = voice.status === "idle" || voice.status === "closed";
 
   useEffect(() => setMounted(true), []);
+  // Personal greeting after Home face unlock (text bubble + free on-device speech)
+  const [greet, setGreet] = useState<string | null>(null);
+  useEffect(() => {
+    const h = (e: Event) => {
+      const name = (e as CustomEvent<{ name: string }>).detail.name;
+      const msg = `Vanakkam ${name}! Welcome back. Ignition is on, ride safe.`;
+      setGreet(msg); setSpeaking(true);
+      try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(msg); u.lang = "en-IN"; u.onend = () => setSpeaking(false); speechSynthesis.speak(u); } catch {}
+      setTimeout(() => { setGreet(null); setSpeaking(false); }, 6000);
+    };
+    window.addEventListener("rideguard:greet", h);
+    return () => window.removeEventListener("rideguard:greet", h);
+  }, []);
   useEffect(() => {
     if (pendingStart.current) { pendingStart.current = false; voice.start(); }
   }, [url]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -92,6 +108,11 @@ export function AiAvatar() {
         <div className="absolute inset-0">{mounted && <Suspense fallback={null}><AvatarModel speaking={speaking} listening={voice.status === "connected" && !speaking} /></Suspense>}</div>
         {voice.status === "connected" && <span className="absolute -top-1 left-1/2 -translate-x-1/2 rounded-full bg-success px-2 text-[10px] font-bold text-primary-foreground">LIVE</span>}
       </button>
+      {greet && !open && (
+        <div role="status" className="fixed bottom-24 left-1/2 z-50 w-[calc(100%-1.5rem)] max-w-xs -translate-x-1/2 rounded-2xl border bg-card p-3 text-sm shadow-lg">
+          <b>Kavi:</b> {greet}
+        </div>
+      )}
 
       {open && (
         <div className="fixed bottom-24 left-1/2 z-50 w-[calc(100%-1.5rem)] max-w-sm -translate-x-1/2 rounded-2xl border bg-card p-4 shadow-lg">
