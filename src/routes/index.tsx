@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { ScanFace, Fingerprint, Lock, Unlock, Battery, Fuel, Gauge, MapPin, AlertTriangle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ScanFace, Fingerprint, Lock, Unlock, Battery, Fuel, Gauge, MapPin, AlertTriangle, ShieldAlert } from "lucide-react";
 import { AppShell, Card } from "@/components/AppShell";
 import { vehicle, parts } from "@/lib/demo-data";
 import { FaceUnlock } from "@/components/FaceUnlock";
+import { CrashDetector } from "@/components/CrashDetector";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -25,8 +26,20 @@ function Home() {
   const [state, setState] = useState<Step>("locked");
   const [method, setMethod] = useState<"face" | "finger">("face");
   const [faceOpen, setFaceOpen] = useState(false);
+  const [denied, setDenied] = useState(false);
   const [rider, setRider] = useState("Dhivya");
   const alerts = parts.filter((p) => p.status !== "good");
+
+  // Voice commands from Kavi ("start the bike" / "lock the bike")
+  useEffect(() => {
+    const h = (e: Event) => {
+      const a = (e as CustomEvent<{ action: string }>).detail.action;
+      if (a === "lock") setState("locked");
+      if (a === "start") { setRider("you"); setState("unlocked"); }
+    };
+    window.addEventListener("rideguard:bike", h);
+    return () => window.removeEventListener("rideguard:bike", h);
+  }, []);
 
   const scan = (m: "face" | "finger") => {
     setMethod(m);
@@ -38,6 +51,13 @@ function Home() {
 
   return (
     <AppShell title={vehicle.name}>
+      {denied && (
+        <div role="alert" className="mb-3 flex items-start gap-2 rounded-xl border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
+          <span className="flex-1"><b>Unauthorised rider.</b> Face not recognised — vehicle stays locked and the owner has been alerted (demo).</span>
+          <button onClick={() => setDenied(false)} className="font-semibold">OK</button>
+        </div>
+      )}
       <Card className="relative overflow-hidden">
         <p className="text-xs text-muted-foreground">{vehicle.plate}</p>
         <div className="my-4 flex flex-col items-center">
@@ -104,10 +124,17 @@ function Home() {
           ))}
         </Card>
       </Link>
+      <CrashDetector />
       {faceOpen && (
         <FaceUnlock
           onClose={() => setFaceOpen(false)}
-          onMatch={(m) => { setRider(m.minor ? `${m.name} (parent approval rules apply)` : m.name); setFaceOpen(false); setState("unlocked"); }}
+          onReject={() => { setFaceOpen(false); setState("locked"); setDenied(true); }}
+          onMatch={(m) => {
+            setDenied(false);
+            setRider(m.minor ? `${m.name} (parent approval rules apply)` : m.name);
+            setFaceOpen(false); setState("unlocked");
+            window.dispatchEvent(new CustomEvent("rideguard:greet", { detail: { name: m.name } }));
+          }}
         />
       )}
       <p className="mt-6 text-center text-xs text-muted-foreground">Demo mode: all readings are sample data.</p>

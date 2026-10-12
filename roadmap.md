@@ -4,3 +4,5 @@
 - [x] Kavi 3D anime voice assistant on every page (Tamil/English, recognises rider via camera, opens pages)
 - [ ] Live voice test with a real microphone — needs the user to try it in the preview
 - [ ] More Indian languages beyond Tamil/English — waiting on the user to choose which ones
+- [x] Unauthorised-face alert, Kavi greeting on unlock, geo-fence lockdown, crash detection, Tamil/English bike voice commands
+- [ ] Gender-based face check — not built (unreliable and unfair); waiting on the user to pick an alternative
