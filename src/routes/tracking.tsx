@@ -31,6 +31,9 @@ function Tracking() {
   const [i, setI] = useState(0);
   const [stopped, setStopped] = useState(false);
   const [confirm, setConfirm] = useState(false);
+  const [fence, setFence] = useState(true);
+  const [radius, setRadius] = useState(200);
+  const [breach, setBreach] = useState(false);
 
   useEffect(() => {
     if (stopped) return;
@@ -86,9 +89,26 @@ function Tracking() {
           <p className="text-xs text-muted-foreground">{pos.lat.toFixed(4)}° N, {pos.lng.toFixed(4)}° E · updated just now</p>
         </div>
       </Card>
-      <Card className="mt-4 flex items-center gap-3">
-        <ShieldCheck className="h-5 w-5 text-success" />
-        <p className="text-sm">Geo-fence alert on: you'll be told if the bike leaves Chennai city limits.</p>
+      <Card className={`mt-4 ${breach ? "border-destructive" : ""}`}>
+        <div className="flex items-center gap-3">
+          <ShieldCheck className={`h-5 w-5 ${fence ? "text-success" : "text-muted-foreground"}`} />
+          <p className="flex-1 text-sm font-semibold">Geo-fence & theft lockdown</p>
+          <button onClick={() => { setFence(!fence); setBreach(false); }} className={`rounded-full px-3 py-1 text-xs font-semibold ${fence ? "bg-success text-primary-foreground" : "border"}`}>{fence ? "On" : "Off"}</button>
+        </div>
+        {fence && (
+          <>
+            <label className="mt-3 block text-xs text-muted-foreground">Radius around parked bike: {radius} m</label>
+            <input type="range" min={50} max={1000} step={50} value={radius} onChange={(e) => setRadius(Number(e.target.value))} className="w-full" />
+            {breach ? (
+              <div role="alert" className="mt-2 rounded-xl bg-destructive/10 p-3 text-sm text-destructive">
+                <b>Theft alert!</b> Bike moved {radius + 120} m while locked. Engine locked, live GPS broadcast sent to family and Tamil Nadu police helpline (demo).
+                <button onClick={() => setBreach(false)} className="mt-2 block font-semibold underline">Mark as safe</button>
+              </div>
+            ) : (
+              <button onClick={() => { setBreach(true); setStopped(false); }} className="mt-2 w-full rounded-xl border py-2 text-sm font-semibold">Simulate bike moving while locked</button>
+            )}
+          </>
+        )}
       </Card>
     </AppShell>
   );
