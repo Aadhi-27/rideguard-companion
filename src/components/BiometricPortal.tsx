@@ -96,16 +96,17 @@ function FingerScan({ name, onDone }: { name: string; onDone: () => void }) {
   const enroll = async () => {
     setStatus("busy");
     try {
-      await navigator.credentials.create({
+      const cred = (await navigator.credentials.create({
         publicKey: {
           challenge: crypto.getRandomValues(new Uint8Array(32)),
           rp: { name: "RideGuard" },
           user: { id: crypto.getRandomValues(new Uint8Array(16)), name, displayName: name },
           pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
-          authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+          authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "required" },
           timeout: 60000,
         },
-      });
+      })) as PublicKeyCredential | null;
+      if (cred) saveFingerprint(cred.id, name);
       setStatus("ok");
     } catch (e) {
       setErr(e instanceof Error && e.name === "NotAllowedError" ? "Scan cancelled or not allowed." : "Fingerprint scan failed. If you're in the editor preview, open the app in its own tab.");
