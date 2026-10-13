@@ -75,7 +75,7 @@ export function AiAvatar() {
   const start = async () => {
     setHeard(""); setSaid(""); setScanMsg("Looking at you…");
     let name: string | null = null;
-    const enrolled = readFamily().filter((m) => m.face && m.photo);
+    const enrolled = (await readFamily().catch(() => [])).filter((m) => m.face && m.photo);
     let stream: MediaStream | null = null;
     try {
       if (enrolled.length && navigator.mediaDevices?.getUserMedia) {

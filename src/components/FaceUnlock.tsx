@@ -16,7 +16,7 @@ export function FaceUnlock({ onClose, onMatch, onReject }: Props) {
   const verify = useServerFn(verifyFace);
 
   useEffect(() => {
-    setEnrolled(readFamily().filter((m) => m.face && m.photo));
+    readFamily().then((f) => setEnrolled(f.filter((m) => m.face && m.photo))).catch(() => setEnrolled([]));
   }, []);
 
   useEffect(() => {
@@ -52,7 +52,7 @@ export function FaceUnlock({ onClose, onMatch, onReject }: Props) {
         </div>
         {enrolled === null ? null : enrolled.length === 0 ? (
           <div className="mt-4 text-sm">
-            <p>No faces are enrolled yet.</p>
+            <p>No faces are enrolled yet (sign in first if you haven't).</p>
             <Link to="/family" className="mt-3 block w-full rounded-xl bg-primary py-3 text-center font-semibold text-primary-foreground">Enrol a face on the Family page</Link>
           </div>
         ) : (
