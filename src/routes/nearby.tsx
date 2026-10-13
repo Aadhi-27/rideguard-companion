@@ -5,7 +5,6 @@ import { AppShell, Card } from "@/components/AppShell";
 import { loadMaps } from "@/components/LiveMap";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { vehicle } from "@/lib/demo-data";
 
 export const Route = createFileRoute("/nearby")({
   head: () => ({
@@ -53,7 +52,7 @@ function Nearby() {
         last = Date.now();
         const { error } = await supabase.from("rider_locations").upsert({
           user_id: user.id, display_name: user.user_metadata?.["full_name"] ?? user.email?.split("@")[0] ?? "Rider",
-          vehicle: hasRG ? vehicle.name : "Phone only", has_rideguard: hasRG, ...pos, sharing: true, updated_at: new Date().toISOString(),
+          vehicle: hasRG ? "RideGuard bike" : "Phone only", has_rideguard: hasRG, ...pos, sharing: true, updated_at: new Date().toISOString(),
         });
         if (error) setErr("Couldn't share your location. Try again.");
       },

@@ -25,6 +25,7 @@ export function LiveMap({ path, index, stopped }: { path: { lat: number; lng: nu
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<any>(null);
   const marker = useRef<any>(null);
+  const line = useRef<any>(null);
   const [err, setErr] = useState(false);
 
   useEffect(() => {
@@ -33,14 +34,15 @@ export function LiveMap({ path, index, stopped }: { path: { lat: number; lng: nu
         if (!el.current || map.current) return;
         const g = window.google.maps;
         map.current = new g.Map(el.current, { center: path[0], zoom: 15, clickableIcons: false, disableDefaultUI: true, zoomControl: true });
-        new g.Polyline({ map: map.current, path, strokeColor: "#f97316", strokeWeight: 4 });
-        marker.current = new g.Marker({ map: map.current, position: path[0], title: "Your vehicle" });
+        line.current = new g.Polyline({ map: map.current, path, strokeColor: "#f97316", strokeWeight: 4 });
+        marker.current = new g.Marker({ map: map.current, position: path[index] ?? path[0], title: "You" });
       })
       .catch(() => setErr(true));
   }, [path]);
 
   useEffect(() => {
     const p = path[index];
+    line.current?.setPath(path);
     if (marker.current && p) { marker.current.setPosition(p); map.current?.panTo(p); }
   }, [index, path]);
 

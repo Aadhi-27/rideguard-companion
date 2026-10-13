@@ -124,7 +124,7 @@ function conversationInstructions(config: LiveConfig) {
 Language: Reply in the language the rider uses: Tamil (natural spoken Tamil) or Indian English. Mixed Tanglish is fine if the rider mixes.
 ${config.riderName ? `Face check: the camera recognised the rider as ${config.riderName}. Greet them by name.` : "Face check: no enrolled face was recognised, so do not assume the rider's name."}
 App pages: home (face/fingerprint unlock, battery, fuel), tracking (live map, emergency shutdown), condition (3D bike health), cameras (360 view), family (members, faces, fingerprints, minor approval), nearby (riders sharing location), sos (Tamil Nadu emergency help).
-All vehicle readings are demo data; say so if asked for readings. For a real emergency tell them to call 112 and open the SOS page.
+Bike readings (battery, fuel, parts) are not connected yet; say so if asked. For a real emergency tell them to call 112 and open the SOS page.
 Speak warmly in short replies. Ask one focused question when unclear.
 Backchannel policy: Use moderate listening sounds without taking over.
 Interruption policy: Stop your answer and listen when the user interrupts.
@@ -200,7 +200,7 @@ async function answerQuestion(
       "Transcripts may be incomplete or corrected. Use the latest correction. Do not repeat completed actions. " +
       "To open a page call open_app_page with one of: " + PAGES.join(", ") + ". " +
       "Spoken commands may be Tamil or English, e.g. 'Kavi, start the bike' / 'வண்டியை ஸ்டார்ட் பண்ணு' → control_bike start; 'lock the bike' / 'வண்டியை லாக் பண்ணு' → control_bike lock; 'show nearby riders' / 'பக்கத்துல யாரு இருக்காங்க' → open_app_page nearby. " +
-      "Reply in the rider's language (Tamil or English) in at most 80 words. Vehicle readings are demo data.",
+      "Reply in the rider's language (Tamil or English) in at most 80 words. Bike readings are not connected yet.",
     messages,
     tools: {
       open_app_page: tool({
