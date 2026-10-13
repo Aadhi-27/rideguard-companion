@@ -95,49 +95,38 @@ function Home() {
         )}
       </Card>
 
-      <div className="mt-4 grid grid-cols-3 gap-3">
-        <Stat icon={Battery} label="Battery" value={`${vehicle.battery}%`} />
-        <Stat icon={Fuel} label="Fuel" value={`${vehicle.fuel}%`} />
-        <Stat icon={Gauge} label="Km" value={vehicle.odometer.toLocaleString()} />
-      </div>
+      <Card className="mt-4 text-sm">
+        <p className="font-semibold">Bike readings</p>
+        <p className="mt-1 text-xs text-muted-foreground">Battery, fuel, odometer, parts health and remote ignition will show here once your bike's tracking device is connected.</p>
+      </Card>
 
       <Link to="/tracking">
         <Card className="mt-4 flex items-center gap-3">
           <MapPin className="h-6 w-6 text-accent" />
           <div className="flex-1">
-            <p className="text-sm font-semibold">Parked</p>
-            <p className="text-xs text-muted-foreground">{vehicle.location}</p>
+            <p className="text-sm font-semibold">Live location</p>
+            <p className="text-xs text-muted-foreground">See this phone's real GPS position on the map</p>
           </div>
           <span className="text-xs text-primary">Live →</span>
-        </Card>
-      </Link>
-
-      <Link to="/condition">
-        <Card className="mt-4">
-          <p className="mb-2 text-sm font-semibold">Needs attention</p>
-          {alerts.map((a) => (
-            <div key={a.key} className="flex items-center gap-2 py-1 text-sm">
-              <AlertTriangle className={`h-4 w-4 ${a.status === "alert" ? "text-destructive" : "text-warning"}`} />
-              <span className="flex-1">{a.label}</span>
-              <span className="text-muted-foreground">{a.value}</span>
-            </div>
-          ))}
         </Card>
       </Link>
       <CrashDetector />
       {faceOpen && (
         <FaceUnlock
           onClose={() => setFaceOpen(false)}
-          onReject={() => { setFaceOpen(false); setState("locked"); setDenied(true); }}
-          onMatch={(m) => {
-            setDenied(false);
-            setRider(m.minor ? `${m.name} (parent approval rules apply)` : m.name);
-            setFaceOpen(false); setState("unlocked");
+          onReject={() => { setFaceOpen(false); setState("locked"); setDenied("Face not recognised — vehicle stays locked."); }}
+          onMatch={async (m) => {
+            setFaceOpen(false);
+            if (m.minor && !(await hasApproval(m.id))) {
+              setState("locked");
+              setDenied(`${m.name} is a minor. A parent must approve a ride on the Family page first.`);
+              return;
+            }
+            setDenied(null); setRider(m.name); setState("unlocked");
             window.dispatchEvent(new CustomEvent("rideguard:greet", { detail: { name: m.name } }));
           }}
         />
       )}
-      <p className="mt-6 text-center text-xs text-muted-foreground">Demo mode: all readings are sample data.</p>
     </AppShell>
   );
 }

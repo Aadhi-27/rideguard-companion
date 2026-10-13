@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ScanFace, Fingerprint, X, CheckCircle2, AlertTriangle } from "lucide-react";
 import { snapshot } from "@/lib/camera";
+import { saveFingerprint } from "@/lib/fingerprint";
 
 type Props = { kind: "face" | "finger"; name: string; onClose: () => void; onDone: (photo?: string) => void };
 
