@@ -144,13 +144,3 @@ function Home() {
     </AppShell>
   );
 }
-
-function Stat({ icon: Icon, label, value }: { icon: typeof Battery; label: string; value: string }) {
-  return (
-    <Card className="p-3 text-center">
-      <Icon className="mx-auto h-5 w-5 text-primary" />
-      <p className="mt-1 font-display text-lg font-bold">{value}</p>
-      <p className="text-xs text-muted-foreground">{label}</p>
-    </Card>
-  );
-}
