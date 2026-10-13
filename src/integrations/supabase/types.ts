@@ -14,6 +14,95 @@ export type Database = {
   }
   public: {
     Tables: {
+      family_members: {
+        Row: {
+          age: number
+          created_at: string
+          email: string | null
+          face: boolean
+          finger: boolean
+          id: string
+          licence: string
+          member_user_id: string | null
+          name: string
+          owner_id: string
+          phone: string | null
+          photo: string | null
+          relation: string
+        }
+        Insert: {
+          age?: number
+          created_at?: string
+          email?: string | null
+          face?: boolean
+          finger?: boolean
+          id?: string
+          licence?: string
+          member_user_id?: string | null
+          name: string
+          owner_id: string
+          phone?: string | null
+          photo?: string | null
+          relation?: string
+        }
+        Update: {
+          age?: number
+          created_at?: string
+          email?: string | null
+          face?: boolean
+          finger?: boolean
+          id?: string
+          licence?: string
+          member_user_id?: string | null
+          name?: string
+          owner_id?: string
+          phone?: string | null
+          photo?: string | null
+          relation?: string
+        }
+        Relationships: []
+      }
+      ride_requests: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          id: string
+          member_id: string
+          note: string
+          owner_id: string
+          requester_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          id?: string
+          member_id: string
+          note?: string
+          owner_id: string
+          requester_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          id?: string
+          member_id?: string
+          note?: string
+          owner_id?: string
+          requester_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_requests_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rider_locations: {
         Row: {
           display_name: string
@@ -52,7 +141,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      claim_family_membership: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

@@ -40,6 +40,7 @@ function Condition() {
 
   return (
     <AppShell title="3D condition">
+      <p className="mb-3 rounded-xl border border-warning bg-warning/10 p-3 text-xs">Sample view. Live data appears here once your bike's device is connected.</p>
       <Card className="p-0">
         <div
           className="relative h-72 cursor-grab touch-none select-none"

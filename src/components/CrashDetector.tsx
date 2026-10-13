@@ -1,19 +1,20 @@
 import { useEffect, useRef, useState } from "react";
-import { Activity, Siren } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { Activity } from "lucide-react";
 import { Card } from "@/components/AppShell";
-import { readFamily } from "@/lib/family-store";
+import { SOS_AUTO_KEY } from "@/lib/sos";
 
 const JOLT = 35; // m/s² — well above normal riding bumps
 
 export function CrashDetector() {
   const [armed, setArmed] = useState(false);
   const [count, setCount] = useState<number | null>(null);
-  const [sent, setSent] = useState<string[] | null>(null);
   const timer = useRef<ReturnType<typeof setInterval>>(undefined);
+  const navigate = useNavigate();
 
   const trigger = () => {
     if (timer.current) return;
-    setSent(null); setCount(10);
+    setCount(10);
     timer.current = setInterval(() => setCount((c) => (c === null ? null : c - 1)), 1000);
   };
   const cancel = () => { clearInterval(timer.current); timer.current = undefined; setCount(null); };
@@ -21,8 +22,9 @@ export function CrashDetector() {
   useEffect(() => {
     if (count !== 0) return;
     clearInterval(timer.current); timer.current = undefined; setCount(null);
-    setSent(readFamily().filter((m) => !m.minor).map((m) => m.name));
-  }, [count]);
+    sessionStorage.setItem(SOS_AUTO_KEY, "1");
+    navigate({ to: "/sos" });
+  }, [count, navigate]);
 
   useEffect(() => {
     if (!armed) return;
@@ -54,10 +56,9 @@ export function CrashDetector() {
       ) : (
         <>
           <p className="mt-1 text-xs text-muted-foreground">{armed ? "Watching the phone's motion sensor for drops or severe jolts." : "Off. Turn on to watch for crashes while riding."}</p>
-          {sent && <p className="mt-2 flex items-center gap-2 text-sm text-destructive"><Siren className="h-4 w-4" />SOS sent with location to {sent.join(", ") || "family"} (demo).</p>}
           <div className="mt-3 grid grid-cols-2 gap-2">
             <button onClick={arm} className={`rounded-xl py-2 font-semibold ${armed ? "bg-success text-primary-foreground" : "border"}`}>{armed ? "On" : "Turn on"}</button>
-            <button onClick={trigger} className="rounded-xl border py-2 font-semibold">Simulate crash</button>
+            <button onClick={trigger} className="rounded-xl border py-2 font-semibold">Test countdown</button>
           </div>
         </>
       )}

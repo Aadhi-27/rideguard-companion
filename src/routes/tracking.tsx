@@ -1,17 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Navigation, ShieldCheck, Power, RotateCcw } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Navigation, ShieldCheck, Power } from "lucide-react";
 import { AppShell, Card } from "@/components/AppShell";
 import { LiveMap } from "@/components/LiveMap";
-import { vehicle } from "@/lib/demo-data";
 
 export const Route = createFileRoute("/tracking")({
   head: () => ({
     meta: [
       { title: "Live tracking | RideGuard" },
-      { name: "description", content: "See where your two-wheeler is on a real map, its speed, and shut it down in an emergency." },
+      { name: "description", content: "See your real GPS position on a live map with speed and a geo-fence alert." },
       { property: "og:title", content: "Live tracking | RideGuard" },
-      { property: "og:description", content: "Real map location and emergency engine shutdown for your two-wheeler." },
+      { property: "og:description", content: "Real-time GPS map, speed and geo-fence for your two-wheeler." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -19,96 +18,98 @@ export const Route = createFileRoute("/tracking")({
   component: Tracking,
 });
 
-// Sample trip along Anna Salai, Chennai
-const path = [
-  { lat: 13.0358, lng: 80.2443 }, { lat: 13.0378, lng: 80.2412 }, { lat: 13.0398, lng: 80.2380 },
-  { lat: 13.0418, lng: 80.2341 }, { lat: 13.0445, lng: 80.2310 }, { lat: 13.0472, lng: 80.2280 },
-  { lat: 13.0500, lng: 80.2252 }, { lat: 13.0530, lng: 80.2225 },
-];
-const speeds = [0, 22, 31, 38, 34, 41, 28, 19];
+type P = { lat: number; lng: number };
+function meters(a: P, b: P) {
+  const r = (x: number) => (x * Math.PI) / 180;
+  const d = Math.sin(r(b.lat - a.lat) / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(r(b.lng - a.lng) / 2) ** 2;
+  return 12742000 * Math.asin(Math.sqrt(d));
+}
 
 function Tracking() {
-  const [i, setI] = useState(0);
-  const [stopped, setStopped] = useState(false);
-  const [confirm, setConfirm] = useState(false);
-  const [fence, setFence] = useState(true);
+  const [trail, setTrail] = useState<P[]>([]);
+  const [speed, setSpeed] = useState<number | null>(null);
+  const [acc, setAcc] = useState<number | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [fence, setFence] = useState(false);
   const [radius, setRadius] = useState(200);
-  const [breach, setBreach] = useState(false);
+  const [center, setCenter] = useState<P | null>(null);
+  const alerted = useRef(false);
 
   useEffect(() => {
-    if (stopped) return;
-    const t = setInterval(() => setI((v) => (v + 1) % path.length), 2000);
-    return () => clearInterval(t);
-  }, [stopped]);
-  const pos = path[i]!;
+    if (!navigator.geolocation) { setErr("This device can't share location."); return; }
+    const id = navigator.geolocation.watchPosition(
+      (p) => {
+        const pos = { lat: p.coords.latitude, lng: p.coords.longitude };
+        setErr(null); setAcc(p.coords.accuracy);
+        setSpeed(p.coords.speed != null ? Math.round(p.coords.speed * 3.6) : null);
+        setTrail((t) => (t.length && meters(t[t.length - 1]!, pos) < 5 ? t : [...t.slice(-200), pos]));
+      },
+      () => setErr("Location permission was blocked. Allow location in your browser to track."),
+      { enableHighAccuracy: true, maximumAge: 5000 },
+    );
+    return () => navigator.geolocation.clearWatch(id);
+  }, []);
+
+  const pos = trail[trail.length - 1];
+  const dist = fence && center && pos ? meters(center, pos) : 0;
+  const breach = fence && dist > radius;
+
+  useEffect(() => {
+    if (breach && !alerted.current) {
+      alerted.current = true;
+      navigator.vibrate?.([400, 200, 400]);
+      if ("Notification" in window && Notification.permission === "granted") new Notification("RideGuard geo-fence", { body: `Moved ${Math.round(dist)} m from the parked spot.` });
+    }
+    if (!breach) alerted.current = false;
+  }, [breach, dist]);
+
+  const toggleFence = () => {
+    if (!fence && pos) { setCenter(pos); if ("Notification" in window && Notification.permission === "default") void Notification.requestPermission(); }
+    setFence(!fence);
+  };
 
   return (
     <AppShell title="Live tracking">
       <Card className="overflow-hidden p-0">
-        <LiveMap path={path} index={i} stopped={stopped} />
-      </Card>
-
-      <Card className={`mt-4 ${stopped ? "border-destructive" : ""}`}>
-        <p className="flex items-center gap-2 font-semibold"><Power className="h-4 w-4 text-destructive" /> Emergency shutdown</p>
-        {stopped ? (
-          <>
-            <p className="mt-1 text-sm text-destructive">Engine cut off and vehicle locked. Hazard lights on.</p>
-            <button onClick={() => setStopped(false)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border py-3 font-semibold"><RotateCcw className="h-4 w-4" />Restore engine</button>
-          </>
-        ) : confirm ? (
-          <>
-            <p className="mt-1 text-sm">The engine will slow down safely and switch off. Continue?</p>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <button onClick={() => { setStopped(true); setConfirm(false); }} className="rounded-xl bg-destructive py-3 font-bold text-destructive-foreground">Shut down</button>
-              <button onClick={() => setConfirm(false)} className="rounded-xl border py-3 font-semibold">Cancel</button>
-            </div>
-          </>
-        ) : (
-          <>
-            <p className="mt-1 text-xs text-muted-foreground">Use if the vehicle is stolen or a rider is in danger.</p>
-            <button onClick={() => setConfirm(true)} className="mt-3 w-full rounded-xl bg-destructive py-3 font-bold text-destructive-foreground">Shut down vehicle</button>
-          </>
-        )}
+        {pos ? <LiveMap path={trail} index={trail.length - 1} stopped={false} /> : <div className="flex h-80 items-center justify-center p-6 text-center text-sm text-muted-foreground">{err ?? "Finding your location…"}</div>}
       </Card>
 
       <div className="mt-4 grid grid-cols-2 gap-3">
         <Card>
           <p className="text-xs text-muted-foreground">Speed</p>
-          <p className="font-display text-3xl font-bold">{stopped ? 0 : speeds[i]}<span className="text-sm"> km/h</span></p>
+          <p className="font-display text-3xl font-bold">{speed ?? "–"}<span className="text-sm"> km/h</span></p>
         </Card>
         <Card>
-          <p className="text-xs text-muted-foreground">Rider</p>
-          <p className="font-display text-lg font-bold">Arun (Son)</p>
-          <p className="text-xs text-success">Approved by parent</p>
+          <p className="text-xs text-muted-foreground">GPS accuracy</p>
+          <p className="font-display text-3xl font-bold">{acc ? Math.round(acc) : "–"}<span className="text-sm"> m</span></p>
         </Card>
       </div>
-      <Card className="mt-4 flex items-center gap-3">
-        <Navigation className="h-5 w-5 text-accent" />
-        <div className="text-sm">
-          <p className="font-semibold">{vehicle.location}</p>
-          <p className="text-xs text-muted-foreground">{pos.lat.toFixed(4)}° N, {pos.lng.toFixed(4)}° E · updated just now</p>
-        </div>
-      </Card>
+      {pos && (
+        <Card className="mt-4 flex items-center gap-3">
+          <Navigation className="h-5 w-5 text-accent" />
+          <p className="text-sm">{pos.lat.toFixed(5)}° N, {pos.lng.toFixed(5)}° E · live</p>
+        </Card>
+      )}
+
       <Card className={`mt-4 ${breach ? "border-destructive" : ""}`}>
         <div className="flex items-center gap-3">
           <ShieldCheck className={`h-5 w-5 ${fence ? "text-success" : "text-muted-foreground"}`} />
-          <p className="flex-1 text-sm font-semibold">Geo-fence & theft lockdown</p>
-          <button onClick={() => { setFence(!fence); setBreach(false); }} className={`rounded-full px-3 py-1 text-xs font-semibold ${fence ? "bg-success text-primary-foreground" : "border"}`}>{fence ? "On" : "Off"}</button>
+          <p className="flex-1 text-sm font-semibold">Geo-fence</p>
+          <button disabled={!pos} onClick={toggleFence} className={`rounded-full px-3 py-1 text-xs font-semibold disabled:opacity-50 ${fence ? "bg-success text-primary-foreground" : "border"}`}>{fence ? "On" : "Off"}</button>
         </div>
+        <p className="mt-1 text-xs text-muted-foreground">Turning it on remembers where you are now. Keep this page open on a phone left with the bike to get an alert if it moves.</p>
         {fence && (
           <>
-            <label className="mt-3 block text-xs text-muted-foreground">Radius around parked bike: {radius} m</label>
+            <label className="mt-3 block text-xs text-muted-foreground">Radius: {radius} m · now {Math.round(dist)} m away</label>
             <input type="range" min={50} max={1000} step={50} value={radius} onChange={(e) => setRadius(Number(e.target.value))} className="w-full" />
-            {breach ? (
-              <div role="alert" className="mt-2 rounded-xl bg-destructive/10 p-3 text-sm text-destructive">
-                <b>Theft alert!</b> Bike moved {radius + 120} m while locked. Engine locked, live GPS broadcast sent to family and Tamil Nadu police helpline (demo).
-                <button onClick={() => setBreach(false)} className="mt-2 block font-semibold underline">Mark as safe</button>
-              </div>
-            ) : (
-              <button onClick={() => { setBreach(true); setStopped(false); }} className="mt-2 w-full rounded-xl border py-2 text-sm font-semibold">Simulate bike moving while locked</button>
-            )}
+            {breach && <div role="alert" className="mt-2 rounded-xl bg-destructive/10 p-3 text-sm text-destructive"><b>Moved outside the geo-fence!</b> {Math.round(dist)} m from where it was parked.</div>}
           </>
         )}
+      </Card>
+
+      <Card className="mt-4 flex items-center gap-3">
+        <Power className="h-5 w-5 text-muted-foreground" />
+        <p className="text-xs text-muted-foreground">Emergency engine shutdown and the bike's own GPS will work once your bike's tracking device is connected.</p>
       </Card>
     </AppShell>
   );

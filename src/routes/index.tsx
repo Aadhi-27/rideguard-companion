@@ -1,10 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ScanFace, Fingerprint, Lock, Unlock, Battery, Fuel, Gauge, MapPin, AlertTriangle, ShieldAlert } from "lucide-react";
+import { ScanFace, Fingerprint, Lock, Unlock, MapPin, ShieldAlert } from "lucide-react";
 import { AppShell, Card } from "@/components/AppShell";
-import { vehicle, parts } from "@/lib/demo-data";
 import { FaceUnlock } from "@/components/FaceUnlock";
 import { CrashDetector } from "@/components/CrashDetector";
+import { supabase } from "@/integrations/supabase/client";
+import { verifyFingerprint } from "@/lib/fingerprint";
+import { fetchFamily } from "@/lib/family-store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -12,7 +14,7 @@ export const Route = createFileRoute("/")({
       { title: "RideGuard: Smart two-wheeler security" },
       { name: "description", content: "Unlock your scooter with your face or fingerprint, track it live and keep your family safe." },
       { property: "og:title", content: "RideGuard: Smart two-wheeler security" },
-      { property: "og:description", content: "Face and fingerprint unlock, live tracking, 360° cameras and SOS for your two-wheeler." },
+      { property: "og:description", content: "Face and fingerprint unlock, live tracking, family ride approval and SOS for your two-wheeler." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -22,13 +24,19 @@ export const Route = createFileRoute("/")({
 
 type Step = "locked" | "scanning" | "unlocked";
 
+/** A minor may ride only with a parent's approval from the last hour. */
+async function hasApproval(memberId: string) {
+  const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const { data } = await supabase.from("ride_requests").select("id").eq("member_id", memberId).eq("status", "approved").gte("decided_at", since).limit(1);
+  return !!data?.length;
+}
+
 function Home() {
   const [state, setState] = useState<Step>("locked");
   const [method, setMethod] = useState<"face" | "finger">("face");
   const [faceOpen, setFaceOpen] = useState(false);
-  const [denied, setDenied] = useState(false);
-  const [rider, setRider] = useState("Dhivya");
-  const alerts = parts.filter((p) => p.status !== "good");
+  const [denied, setDenied] = useState<string | null>(null);
+  const [rider, setRider] = useState("");
 
   // Voice commands from Kavi ("start the bike" / "lock the bike")
   useEffect(() => {
@@ -41,25 +49,31 @@ function Home() {
     return () => window.removeEventListener("rideguard:bike", h);
   }, []);
 
-  const scan = (m: "face" | "finger") => {
+  const scan = async (m: "face" | "finger") => {
     setMethod(m);
     if (m === "face") { setFaceOpen(true); return; }
-    setRider("Dhivya");
     setState("scanning");
-    setTimeout(() => setState("unlocked"), 1800);
+    const r = await verifyFingerprint();
+    if ("error" in r) { setState("locked"); setDenied(r.error); return; }
+    const member = (await fetchFamily().catch(() => [])).find((f) => f.name === r.name);
+    if (member?.minor && !(await hasApproval(member.id))) {
+      setState("locked"); setDenied(`${r.name} is a minor. A parent must approve a ride on the Family page first.`); return;
+    }
+    setDenied(null); setRider(r.name); setState("unlocked");
+    window.dispatchEvent(new CustomEvent("rideguard:greet", { detail: { name: r.name } }));
   };
 
   return (
-    <AppShell title={vehicle.name}>
+    <AppShell title="RideGuard">
       {denied && (
         <div role="alert" className="mb-3 flex items-start gap-2 rounded-xl border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
-          <span className="flex-1"><b>Unauthorised rider.</b> Face not recognised — vehicle stays locked and the owner has been alerted (demo).</span>
-          <button onClick={() => setDenied(false)} className="font-semibold">OK</button>
+          <span className="flex-1"><b>Unauthorised.</b> {denied}</span>
+          <button onClick={() => setDenied(null)} className="font-semibold">OK</button>
         </div>
       )}
       <Card className="relative overflow-hidden">
-        <p className="text-xs text-muted-foreground">{vehicle.plate}</p>
+        <p className="text-xs text-muted-foreground">Rider check</p>
         <div className="my-4 flex flex-col items-center">
           <div
             className={`relative flex h-36 w-36 items-center justify-center overflow-hidden rounded-full border-4 ${
@@ -95,59 +109,38 @@ function Home() {
         )}
       </Card>
 
-      <div className="mt-4 grid grid-cols-3 gap-3">
-        <Stat icon={Battery} label="Battery" value={`${vehicle.battery}%`} />
-        <Stat icon={Fuel} label="Fuel" value={`${vehicle.fuel}%`} />
-        <Stat icon={Gauge} label="Km" value={vehicle.odometer.toLocaleString()} />
-      </div>
+      <Card className="mt-4 text-sm">
+        <p className="font-semibold">Bike readings</p>
+        <p className="mt-1 text-xs text-muted-foreground">Battery, fuel, odometer, parts health and remote ignition will show here once your bike's tracking device is connected.</p>
+      </Card>
 
       <Link to="/tracking">
         <Card className="mt-4 flex items-center gap-3">
           <MapPin className="h-6 w-6 text-accent" />
           <div className="flex-1">
-            <p className="text-sm font-semibold">Parked</p>
-            <p className="text-xs text-muted-foreground">{vehicle.location}</p>
+            <p className="text-sm font-semibold">Live location</p>
+            <p className="text-xs text-muted-foreground">See this phone's real GPS position on the map</p>
           </div>
           <span className="text-xs text-primary">Live →</span>
-        </Card>
-      </Link>
-
-      <Link to="/condition">
-        <Card className="mt-4">
-          <p className="mb-2 text-sm font-semibold">Needs attention</p>
-          {alerts.map((a) => (
-            <div key={a.key} className="flex items-center gap-2 py-1 text-sm">
-              <AlertTriangle className={`h-4 w-4 ${a.status === "alert" ? "text-destructive" : "text-warning"}`} />
-              <span className="flex-1">{a.label}</span>
-              <span className="text-muted-foreground">{a.value}</span>
-            </div>
-          ))}
         </Card>
       </Link>
       <CrashDetector />
       {faceOpen && (
         <FaceUnlock
           onClose={() => setFaceOpen(false)}
-          onReject={() => { setFaceOpen(false); setState("locked"); setDenied(true); }}
-          onMatch={(m) => {
-            setDenied(false);
-            setRider(m.minor ? `${m.name} (parent approval rules apply)` : m.name);
-            setFaceOpen(false); setState("unlocked");
+          onReject={() => { setFaceOpen(false); setState("locked"); setDenied("Face not recognised — vehicle stays locked."); }}
+          onMatch={async (m) => {
+            setFaceOpen(false);
+            if (m.minor && !(await hasApproval(m.id))) {
+              setState("locked");
+              setDenied(`${m.name} is a minor. A parent must approve a ride on the Family page first.`);
+              return;
+            }
+            setDenied(null); setRider(m.name); setState("unlocked");
             window.dispatchEvent(new CustomEvent("rideguard:greet", { detail: { name: m.name } }));
           }}
         />
       )}
-      <p className="mt-6 text-center text-xs text-muted-foreground">Demo mode: all readings are sample data.</p>
     </AppShell>
-  );
-}
-
-function Stat({ icon: Icon, label, value }: { icon: typeof Battery; label: string; value: string }) {
-  return (
-    <Card className="p-3 text-center">
-      <Icon className="mx-auto h-5 w-5 text-primary" />
-      <p className="mt-1 font-display text-lg font-bold">{value}</p>
-      <p className="text-xs text-muted-foreground">{label}</p>
-    </Card>
   );
 }
