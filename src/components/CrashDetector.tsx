@@ -56,10 +56,9 @@ export function CrashDetector() {
       ) : (
         <>
           <p className="mt-1 text-xs text-muted-foreground">{armed ? "Watching the phone's motion sensor for drops or severe jolts." : "Off. Turn on to watch for crashes while riding."}</p>
-          {sent && <p className="mt-2 flex items-center gap-2 text-sm text-destructive"><Siren className="h-4 w-4" />SOS sent with location to {sent.join(", ") || "family"} (demo).</p>}
           <div className="mt-3 grid grid-cols-2 gap-2">
             <button onClick={arm} className={`rounded-xl py-2 font-semibold ${armed ? "bg-success text-primary-foreground" : "border"}`}>{armed ? "On" : "Turn on"}</button>
-            <button onClick={trigger} className="rounded-xl border py-2 font-semibold">Simulate crash</button>
+            <button onClick={trigger} className="rounded-xl border py-2 font-semibold">Test countdown</button>
           </div>
         </>
       )}
