@@ -3,6 +3,7 @@
 - [x] Nearby vehicles + rider locations (sign-in, consent)
 - [x] Kavi 3D anime voice assistant (Tamil/English, bike voice commands)
 - [x] Real accounts + cloud family, real parent approval, real phone GPS tracking/geo-fence, real SOS (112 call + SMS/WhatsApp)
+- [ ] Build gesture 3D twin, bilingual accessible actions, helmet checklist/streak, Nearby Chennai hazard map/reporting, and simulated anti-theft alert timeline
 - [ ] Connect the bike's device (battery, fuel, parts, cameras, remote ignition/shutdown) — waiting on device brand/details from the user
 - [ ] Live voice test with a real microphone — needs the user
 - [ ] More Indian languages — waiting on the user
