@@ -1,12 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ScanFace, Fingerprint, Lock, Unlock, MapPin, ShieldAlert } from "lucide-react";
+import { ScanFace, Fingerprint, Lock, Unlock, MapPin, ShieldAlert, Shield } from "lucide-react";
 import { AppShell, Card } from "@/components/AppShell";
 import { FaceUnlock } from "@/components/FaceUnlock";
 import { CrashDetector } from "@/components/CrashDetector";
 import { supabase } from "@/integrations/supabase/client";
 import { verifyFingerprint } from "@/lib/fingerprint";
 import { fetchFamily } from "@/lib/family-store";
+import { HelmetSafetyCheck } from "@/components/HelmetSafetyCheck";
+import { playTheftAlarm, saveTheftEvent } from "@/lib/safety-events";
+import { useRideGuardLanguage } from "@/hooks/use-rideguard-language";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -37,17 +40,45 @@ function Home() {
   const [faceOpen, setFaceOpen] = useState(false);
   const [denied, setDenied] = useState<string | null>(null);
   const [rider, setRider] = useState("");
+  const [helmetOpen, setHelmetOpen] = useState(false);
+  const [antiTheft, setAntiTheft] = useState(false);
+  const [alarm, setAlarm] = useState(false);
+  const { language, speak } = useRideGuardLanguage();
 
   // Voice commands from Kavi ("start the bike" / "lock the bike")
   useEffect(() => {
     const h = (e: Event) => {
       const a = (e as CustomEvent<{ action: string }>).detail.action;
-      if (a === "lock") setState("locked");
-      if (a === "start") { setRider("you"); setState("unlocked"); }
+      if (a === "lock") { setState("locked"); setAntiTheft(true); }
+      if (a === "start") { setRider("you"); setHelmetOpen(true); }
     };
     window.addEventListener("rideguard:bike", h);
     return () => window.removeEventListener("rideguard:bike", h);
   }, []);
+
+  useEffect(() => {
+    const arm = (e: Event) => setAntiTheft(Boolean((e as CustomEvent<{ armed: boolean }>).detail.armed));
+    const sos = () => { window.location.assign("/sos"); };
+    window.addEventListener("rideguard:antitheft", arm);
+    window.addEventListener("rideguard:open-sos", sos);
+    return () => { window.removeEventListener("rideguard:antitheft", arm); window.removeEventListener("rideguard:open-sos", sos); };
+  }, []);
+
+  useEffect(() => {
+    if (!alarm) return;
+    const timer = window.setTimeout(() => setAlarm(false), 5000);
+    return () => window.clearTimeout(timer);
+  }, [alarm]);
+
+  const simulateVehicleMovement = () => {
+    if (!antiTheft) return;
+    const position = { lat: 13.0418, lng: 80.2341 };
+    saveTheftEvent(position);
+    playTheftAlarm();
+    setAlarm(true);
+    speak("vehicleMoved");
+    if ("Notification" in window && Notification.permission === "granted") new Notification("RideGuard", { body: "Vehicle moved · simulated alert" });
+  };
 
   const scan = async (m: "face" | "finger") => {
     setMethod(m);
@@ -59,7 +90,7 @@ function Home() {
     if (member?.minor && !(await hasApproval(member.id))) {
       setState("locked"); setDenied(`${r.name} is a minor. A parent must approve a ride on the Family page first.`); return;
     }
-    setDenied(null); setRider(r.name); setState("unlocked");
+    setDenied(null); setRider(r.name); setHelmetOpen(true);
     window.dispatchEvent(new CustomEvent("rideguard:greet", { detail: { name: r.name } }));
   };
 
@@ -72,6 +103,7 @@ function Home() {
           <button onClick={() => setDenied(null)} className="font-semibold">OK</button>
         </div>
       )}
+      {alarm && <div role="alert" className="fixed inset-0 z-[70] flex flex-col items-center justify-center gap-4 bg-destructive/90 p-6 text-center text-destructive-foreground animate-pulse"><ShieldAlert className="h-24 w-24" /><strong className="text-3xl">Vehicle moved</strong><p className="text-lg">{language === "ta" ? "Vandi nagarndhadhu" : "Check your bike"}</p></div>}
       <Card className="relative overflow-hidden">
         <p className="text-xs text-muted-foreground">Rider check</p>
         <div className="my-4 flex flex-col items-center">
@@ -94,19 +126,29 @@ function Home() {
           </p>
         </div>
         {state === "unlocked" ? (
-          <button onClick={() => setState("locked")} className="w-full rounded-xl border py-3 font-semibold">
-            Lock vehicle
+          <button onClick={() => { setState("locked"); setAntiTheft(true); speak("lock"); }} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-md border py-3 text-lg font-semibold" aria-label="Lock vehicle and arm anti-theft" data-voice-en="Lock vehicle and arm anti-theft" data-voice-ta="Vandi pootthi thiruttu thaduppai iyakkavum">
+            <Lock className="h-6 w-6" />Lock vehicle
           </button>
         ) : (
           <div className="grid grid-cols-2 gap-3">
-            <button disabled={state === "scanning"} onClick={() => scan("face")} className="flex items-center justify-center gap-2 rounded-xl bg-primary py-3 font-semibold text-primary-foreground disabled:opacity-60">
+              <button disabled={state === "scanning"} onClick={() => scan("face")} className="flex min-h-14 items-center justify-center gap-2 rounded-md bg-primary py-3 text-lg font-semibold text-primary-foreground disabled:opacity-60" data-voice-en="Scan face to unlock" data-voice-ta="Mugaththai scan seydhu thirakkavum">
               <ScanFace className="h-5 w-5" /> Face
             </button>
-            <button disabled={state === "scanning"} onClick={() => scan("finger")} className="flex items-center justify-center gap-2 rounded-xl bg-secondary py-3 font-semibold text-secondary-foreground disabled:opacity-60">
+              <button disabled={state === "scanning"} onClick={() => scan("finger")} className="flex min-h-14 items-center justify-center gap-2 rounded-md bg-secondary py-3 text-lg font-semibold text-secondary-foreground disabled:opacity-60" data-voice-en="Use fingerprint to unlock" data-voice-ta="Kairaegai payanpaduththi thirakkavum">
               <Fingerprint className="h-5 w-5" /> Fingerprint
             </button>
           </div>
         )}
+      </Card>
+
+      <Card className={`mt-4 ${alarm ? "border-destructive" : ""}`}>
+        <div className="flex items-center gap-3">
+          <Shield className={`h-8 w-8 ${antiTheft ? "text-success" : "text-muted-foreground"}`} />
+          <p className="flex-1 text-base font-bold">Anti-theft mode</p>
+          <button aria-label={antiTheft ? "Turn anti-theft off" : "Turn anti-theft on"} aria-pressed={antiTheft} className={`min-h-12 min-w-20 rounded-md px-3 font-bold ${antiTheft ? "bg-success text-primary-foreground" : "border"}`} onClick={() => { const next = !antiTheft; setAntiTheft(next); speak("alarmOn"); }}>{antiTheft ? "ON" : "OFF"}</button>
+        </div>
+        {antiTheft && <button onClick={simulateVehicleMovement} className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-md border border-destructive text-destructive" data-voice-en="Test vehicle movement alert" data-voice-ta="Vandi nagarvu echarikkai sodhanai"><ShieldAlert className="h-5 w-5" />Test movement alert</button>}
+        <p className="mt-2 text-xs text-muted-foreground">Simulated alert on this device; bike movement hardware is not connected.</p>
       </Card>
 
       <Card className="mt-4 text-sm">
@@ -136,11 +178,12 @@ function Home() {
               setDenied(`${m.name} is a minor. A parent must approve a ride on the Family page first.`);
               return;
             }
-            setDenied(null); setRider(m.name); setState("unlocked");
+            setDenied(null); setRider(m.name); setHelmetOpen(true);
             window.dispatchEvent(new CustomEvent("rideguard:greet", { detail: { name: m.name } }));
           }}
         />
       )}
+      {helmetOpen && <HelmetSafetyCheck rider={rider || "Rider"} onStart={() => { setHelmetOpen(false); setState("unlocked"); window.dispatchEvent(new CustomEvent("rideguard:greet", { detail: { name: rider || "Rider" } })); }} onCancel={() => { setHelmetOpen(false); setState("locked"); }} />}
     </AppShell>
   );
 }

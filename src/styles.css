@@ -92,3 +92,6 @@
 .scanline { animation: scanline 1.4s ease-in-out infinite alternate; }
 @keyframes avatar-hop { 0% { transform: translateY(0) } 30% { transform: translateY(-24px) rotate(-6deg) } 60% { transform: translateY(0) } 80% { transform: translateY(-8px) } 100% { transform: translateY(0) } }
 .avatar-walk { transition: top .6s ease, bottom .6s ease, left .6s ease, right .6s ease; animation: avatar-hop .9s ease-out; }
+
+:root { --rideguard-scene-glow: hsl(188 100% 62%); --rideguard-scene-shadow: hsl(188 100% 62% / 0.28); }
+.dark { --rideguard-scene-glow: hsl(188 100% 65%); --rideguard-scene-shadow: hsl(188 100% 62% / 0.38); }

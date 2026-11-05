@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { Home, MapPin, Box, Camera, Users, Siren, Moon, Sun, Radar } from "lucide-react";
+import { Home, MapPin, Box, Camera, Users, Siren, Moon, Sun, Radar, Languages, Volume2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useRideGuardLanguage } from "@/hooks/use-rideguard-language";
 
 const nav = [
   { to: "/", label: "Home", icon: Home },
@@ -13,12 +15,28 @@ const nav = [
 
 export function AppShell({ title, children }: { title: string; children: ReactNode }) {
   const [dark, setDark] = useState(false);
+  const { language, changeLanguage, speak } = useRideGuardLanguage();
   useEffect(() => {
     setDark(localStorage.getItem("theme") === "dark");
   }, []);
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
   }, [dark]);
+  useEffect(() => {
+    const explain = (event: Event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const button = target.closest<HTMLElement>("[data-voice-en], [data-voice-ta]");
+      const text = language === "ta" ? button?.dataset["voiceTa"] : button?.dataset["voiceEn"];
+      if (!text || !("speechSynthesis" in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = language === "ta" ? "ta-IN" : "en-IN";
+      window.speechSynthesis.speak(utterance);
+    };
+    document.addEventListener("click", explain);
+    return () => document.removeEventListener("click", explain);
+  }, [language]);
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col bg-background pb-24">
@@ -28,6 +46,8 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
           <h1 className="text-xl font-bold">{title}</h1>
         </div>
         <div className="flex items-center gap-2">
+          <Button size="icon" variant="ghost" aria-label={language === "en" ? "Switch to Tamil" : "Switch to English"} title={language === "en" ? "தமிழ்" : "English"} onClick={() => changeLanguage(language === "en" ? "ta" : "en")}><Languages className="h-5 w-5" /><span className="sr-only">{language === "en" ? "தமிழ்" : "English"}</span></Button>
+          <Button size="icon" variant="ghost" aria-label="Hear this screen title" onClick={() => speakText(title, language)}><Volume2 className="h-5 w-5" /></Button>
           <button
             aria-label="Toggle theme"
             onClick={() => {
@@ -54,7 +74,7 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
             key={to}
             to={to}
             activeOptions={{ exact: true }}
-            className="flex flex-col items-center gap-1 py-3 text-xs text-muted-foreground"
+            className="flex min-h-16 flex-col items-center justify-center gap-1 py-2 text-xs text-muted-foreground"
             activeProps={{ className: "text-primary font-semibold" }}
           >
             <Icon className="h-5 w-5" />
@@ -67,5 +87,13 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
 }
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <div className={`rounded-2xl border bg-card p-4 shadow-sm ${className}`}>{children}</div>;
+  return <div className={`rounded-md border bg-card p-4 shadow-sm ${className}`}>{children}</div>;
+}
+
+function speakText(text: string, language: "en" | "ta") {
+  if (!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = language === "ta" ? "ta-IN" : "en-IN";
+  window.speechSynthesis.speak(utterance);
 }
