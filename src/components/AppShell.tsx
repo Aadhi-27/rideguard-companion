@@ -22,6 +22,21 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
   }, [dark]);
+  useEffect(() => {
+    const explain = (event: Event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const button = target.closest<HTMLElement>("[data-voice-en], [data-voice-ta]");
+      const text = language === "ta" ? button?.dataset.voiceTa : button?.dataset.voiceEn;
+      if (!text || !("speechSynthesis" in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = language === "ta" ? "ta-IN" : "en-IN";
+      window.speechSynthesis.speak(utterance);
+    };
+    document.addEventListener("click", explain);
+    return () => document.removeEventListener("click", explain);
+  }, [language]);
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col bg-background pb-24">

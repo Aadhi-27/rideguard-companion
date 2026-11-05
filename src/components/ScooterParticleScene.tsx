@@ -145,13 +145,14 @@ export function ScooterParticleScene() {
   const handleRotate = useCallback((amount: number) => setRotation(amount * 0.7), []);
   const handleZoom = useCallback((amount: number) => setZoom(amount), []);
   const setCameraState = useCallback((enabled: boolean) => setCameraOn(enabled), []);
+  const onSceneReady = useCallback(() => setReady(true), []);
 
   return (
     <AppShell title="3D scooter">
     <section className="rg-3d-screen relative isolate min-h-[calc(100dvh-12rem)] overflow-hidden border border-accent/50 shadow-[0_0_32px_var(--rideguard-scene-shadow)]" data-scene-ready={ready ? "1" : undefined}>
       <Canvas camera={{ position: [0, 0, 7.6], fov: 42 }} dpr={[1, 1.5]} gl={{ alpha: false, antialias: true }} onCreated={({ gl, scene }) => { gl.setClearColor(new THREE.Color().setRGB(4 / 255, 12 / 255, 20 / 255)); scene.background = new THREE.Color().setRGB(4 / 255, 12 / 255, 20 / 255); }}>
         <ambientLight intensity={0.8} />
-        <ParticleCloud mode={mode} rotation={rotation} zoom={zoom} onReady={() => setReady(true)} />
+        <ParticleCloud mode={mode} rotation={rotation} zoom={zoom} onReady={onSceneReady} />
       </Canvas>
       <div className="pointer-events-none absolute left-4 top-4 z-10 flex items-center gap-2 rounded-md border border-accent/40 bg-background/70 px-3 py-2 text-xs font-semibold text-accent backdrop-blur">
         <span className={`h-2.5 w-2.5 rounded-full ${gesturesAllowed(speed) ? "bg-success" : "bg-warning"}`} />

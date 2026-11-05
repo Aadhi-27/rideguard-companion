@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { speakRideGuard, type RideGuardLanguage } from "@/lib/rideguard-accessibility";
 
 const LANGUAGE_KEY = "rideguard-language";
@@ -17,11 +17,12 @@ export function useRideGuardLanguage() {
     return () => window.removeEventListener("rideguard:language", onLanguage);
   }, []);
 
-  const changeLanguage = (next: RideGuardLanguage) => {
+  const changeLanguage = useCallback((next: RideGuardLanguage) => {
     localStorage.setItem(LANGUAGE_KEY, next);
     setLanguage(next);
     window.dispatchEvent(new CustomEvent("rideguard:language", { detail: next }));
-  };
+  }, []);
+  const speak = useCallback((key: Parameters<typeof speakRideGuard>[0]) => speakRideGuard(key, language), [language]);
 
-  return { language, changeLanguage, speak: (key: Parameters<typeof speakRideGuard>[0]) => speakRideGuard(key, language) };
+  return { language, changeLanguage, speak };
 }
