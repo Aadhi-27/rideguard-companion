@@ -35,9 +35,16 @@ type Props = {
 };
 
 function handGesture(points: Array<{ x: number; y: number }>): Action | "pinch" | "none" {
-  const distance = (a: number, b: number) => Math.hypot(points[a]!.x - points[b]!.x, points[a]!.y - points[b]!.y);
+  const distance = (a: number, b: number) => {
+    const first = points[a];
+    const second = points[b];
+    return first && second ? Math.hypot(first.x - second.x, first.y - second.y) : Number.POSITIVE_INFINITY;
+  };
   if (distance(4, 8) < 0.055) return "pinch";
-  const raised = [8, 12, 16, 20].map((tip, index) => distance(tip, 0) > distance([6, 10, 14, 18][index]!, 0) * 1.12);
+  const raised = [8, 12, 16, 20].map((tip, index) => {
+    const base = [6, 10, 14, 18][index];
+    return base !== undefined && distance(tip, 0) > distance(base, 0) * 1.12;
+  });
   if (raised[0] && raised[1] && !raised[2] && !raised[3]) return "sos";
   if (raised.every(Boolean)) return "form";
   if (raised.every((isRaised) => !isRaised)) return "lock";
@@ -94,8 +101,11 @@ export function HandGestureOverlay({ speed, onAction, onRotate, onZoom, onCamera
           const now = Date.now();
           if (now - lastPose.current > 90) {
             lastPose.current = now;
-            onRotate(Math.max(-1, Math.min(1, (points[9]!.x - 0.5) * 2)));
-            if (gesture === "pinch") onZoom(Math.max(0.74, Math.min(1.3, 1.3 - Math.hypot(points[4]!.x - points[8]!.x, points[4]!.y - points[8]!.y) * 8)));
+            const palm = points[9];
+            if (palm) onRotate(Math.max(-1, Math.min(1, (palm.x - 0.5) * 2)));
+            const thumb = points[4];
+            const indexFinger = points[8];
+            if (gesture === "pinch" && thumb && indexFinger) onZoom(Math.max(0.74, Math.min(1.3, 1.3 - Math.hypot(thumb.x - indexFinger.x, thumb.y - indexFinger.y) * 8)));
           }
         });
         const processFrame = async () => {

@@ -79,9 +79,9 @@ function ParticleCloud({ mode, rotation, zoom, onReady }: { mode: "scooter" | "l
       const sp = scooterPosition(i);
       const lp = lockPosition(i);
       for (let axis = 0; axis < 3; axis++) {
-        s[i * 3 + axis] = sp[axis]!;
-        l[i * 3 + axis] = lp[axis]!;
-        current[i * 3 + axis] = sp[axis]!;
+        s[i * 3 + axis] = sp[axis] ?? 0;
+        l[i * 3 + axis] = lp[axis] ?? 0;
+        current[i * 3 + axis] = sp[axis] ?? 0;
       }
     }
     const g = new THREE.BufferGeometry();
@@ -101,7 +101,7 @@ function ParticleCloud({ mode, rotation, zoom, onReady }: { mode: "scooter" | "l
     const target = mode === "lock" ? lock : scooter;
     const blend = 1 - Math.exp(-5 * Math.min(delta, 0.05));
     const drift = mode === "scooter" ? Math.sin(time.current * 1.4) * 0.012 : 0;
-    for (let i = 0; i < values.length; i++) values[i] += (target[i]! - values[i]!) * blend;
+    for (let i = 0; i < values.length; i++) values[i] = (values[i] ?? 0) + ((target[i] ?? 0) - (values[i] ?? 0)) * blend;
     attr.needsUpdate = true;
     if (points.current) {
       points.current.rotation.y += (rotation * 0.7 - points.current.rotation.y) * blend;
@@ -161,7 +161,6 @@ export function ScooterParticleScene() {
       <p className="pointer-events-none absolute bottom-4 left-1/2 z-10 w-max max-w-[80%] -translate-x-1/2 rounded-md bg-background/70 px-3 py-2 text-center text-xs text-foreground/90 backdrop-blur">Parked mode only. Gestures are disabled while riding.</p>
       {tutorial && <div className="absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 items-center gap-3 rounded-full border border-accent/40 bg-background/80 p-4 text-accent shadow-[0_0_24px_var(--rideguard-scene-shadow)]" aria-label="Gesture tutorial"><Hand className="h-10 w-10 animate-pulse" /><MoveHorizontal className="h-7 w-7 animate-pulse" /><ZoomIn className="h-7 w-7 animate-pulse" /><LockKeyhole className="h-7 w-7 animate-pulse" /><button aria-label="Close gesture tutorial" onClick={() => { setTutorial(false); localStorage.setItem("rideguard-gesture-tutorial", "seen"); }} className="ml-1 h-10 w-10 rounded-full border border-accent/40 text-xs">OK</button></div>}
       {!cameraOn && <div className="absolute bottom-16 left-1/2 z-10 flex -translate-x-1/2 gap-3"><span className="rounded-md border border-accent/30 bg-background/70 px-2 py-2 text-accent"><Hand className="h-5 w-5" /></span><span className="rounded-md border border-accent/30 bg-background/70 px-2 py-2 text-accent"><MoveHorizontal className="h-5 w-5" /></span><span className="rounded-md border border-accent/30 bg-background/70 px-2 py-2 text-accent"><ZoomIn className="h-5 w-5" /></span></div>}
-      <HandGestureOverlay speed={speed} onAction={handleAction} onRotate={handleRotate} onZoom={handleZoom} />
       <HandGestureOverlay speed={speed} onAction={handleAction} onRotate={handleRotate} onZoom={handleZoom} onCameraState={setCameraState} />
       <div className="absolute bottom-44 left-1/2 z-10 flex max-w-[90vw] -translate-x-1/2 gap-2 overflow-x-auto rounded-md border border-accent/20 bg-background/65 p-2 backdrop-blur">
         {parts.map((part) => <span key={part.key} className="flex shrink-0 items-center gap-1 text-[10px] text-foreground/80"><span className={`h-2 w-2 rounded-full ${part.status === "good" ? "bg-success" : part.status === "check" ? "bg-warning" : "bg-destructive"}`} />{part.label}</span>)}
