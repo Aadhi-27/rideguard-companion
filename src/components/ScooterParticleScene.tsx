@@ -88,6 +88,7 @@ function ParticleCloud({ mode, rotation, zoom, onReady }: { mode: "scooter" | "l
     g.setAttribute("position", new THREE.BufferAttribute(current, 3));
     return { geometry: g, scooter: s, lock: l };
   }, []);
+  const particleColor = useMemo(() => new THREE.Color("hsl(188, 100%, 62%)"), []);
 
   useEffect(() => {
     onReady();
@@ -112,7 +113,7 @@ function ParticleCloud({ mode, rotation, zoom, onReady }: { mode: "scooter" | "l
     camera.position.z += (7.6 / zoom - camera.position.z) * blend;
   });
 
-  return <points ref={points} geometry={geometry}><pointsMaterial size={0.024} sizeAttenuation transparent depthWrite={false} opacity={0.92} color="var(--rideguard-scene-glow)" blending={THREE.AdditiveBlending} /></points>;
+  return <points ref={points} geometry={geometry}><pointsMaterial size={0.024} sizeAttenuation transparent depthWrite={false} opacity={0.92} color={particleColor} blending={THREE.AdditiveBlending} /></points>;
 }
 
 export function ScooterParticleScene() {

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ScanFace, Fingerprint, Lock, Unlock, MapPin, ShieldAlert, Shield, Volume2 } from "lucide-react";
+import { ScanFace, Fingerprint, Lock, Unlock, MapPin, ShieldAlert, Shield } from "lucide-react";
 import { AppShell, Card } from "@/components/AppShell";
 import { FaceUnlock } from "@/components/FaceUnlock";
 import { CrashDetector } from "@/components/CrashDetector";
@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { verifyFingerprint } from "@/lib/fingerprint";
 import { fetchFamily } from "@/lib/family-store";
 import { HelmetSafetyCheck } from "@/components/HelmetSafetyCheck";
-import { playTheftAlarm, readTheftEvents, saveTheftEvent } from "@/lib/safety-events";
+import { playTheftAlarm, saveTheftEvent } from "@/lib/safety-events";
 import { useRideGuardLanguage } from "@/hooks/use-rideguard-language";
 
 export const Route = createFileRoute("/")({

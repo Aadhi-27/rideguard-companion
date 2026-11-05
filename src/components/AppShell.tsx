@@ -27,7 +27,7 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
       const target = event.target;
       if (!(target instanceof Element)) return;
       const button = target.closest<HTMLElement>("[data-voice-en], [data-voice-ta]");
-      const text = language === "ta" ? button?.dataset.voiceTa : button?.dataset.voiceEn;
+      const text = language === "ta" ? button?.dataset["voiceTa"] : button?.dataset["voiceEn"];
       if (!text || !("speechSynthesis" in window)) return;
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
