@@ -31,6 +31,7 @@ type Props = {
   onAction: (action: Action) => void;
   onRotate: (amount: number) => void;
   onZoom: (amount: number) => void;
+  onCameraState?: (enabled: boolean) => void;
 };
 
 function handGesture(points: Array<{ x: number; y: number }>): Action | "pinch" | "none" {
@@ -43,7 +44,7 @@ function handGesture(points: Array<{ x: number; y: number }>): Action | "pinch" 
   return "none";
 }
 
-export function HandGestureOverlay({ speed, onAction, onRotate, onZoom }: Props) {
+export function HandGestureOverlay({ speed, onAction, onRotate, onZoom, onCameraState }: Props) {
   const video = useRef<HTMLVideoElement>(null);
   const stream = useRef<MediaStream | null>(null);
   const hands = useRef<any>(null);
@@ -55,6 +56,10 @@ export function HandGestureOverlay({ speed, onAction, onRotate, onZoom }: Props)
   const [message, setMessage] = useState("");
   const [position, setPosition] = useState({ x: 18, y: 94 });
   const drag = useRef<{ x: number; y: number; left: number; top: number } | null>(null);
+  const speedRef = useRef(speed);
+  speedRef.current = speed;
+
+  useEffect(() => { onCameraState?.(enabled); }, [enabled, onCameraState]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -78,7 +83,7 @@ export function HandGestureOverlay({ speed, onAction, onRotate, onZoom }: Props)
           if (!points) { previousGesture.current = "none"; setMessage("Show one hand"); return; }
           const gesture = handGesture(points);
           if (gesture !== "pinch" && gesture !== "none" && gesture !== previousGesture.current) {
-            if (gesturesAllowed(speed)) {
+            if (gesturesAllowed(speedRef.current)) {
               onAction(gesture);
               setMessage(gesture === "form" ? "Scooter" : gesture === "lock" ? "Locked" : "SOS");
             } else {
@@ -117,7 +122,7 @@ export function HandGestureOverlay({ speed, onAction, onRotate, onZoom }: Props)
       stream.current = null;
       if (hands.current) { void hands.current.close(); hands.current = null; }
     };
-  }, [enabled, onAction, onRotate, onZoom, speed]);
+  }, [enabled, onAction, onRotate, onZoom]);
 
   const startDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
     drag.current = { x: event.clientX, y: event.clientY, left: position.x, top: position.y };

@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { Hand, LockKeyhole, MoveHorizontal, ScanLine, ZoomIn } from "lucide-react";
+import { ArrowLeft, Hand, LockKeyhole, MoveHorizontal, ScanLine, ZoomIn } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { parts } from "@/lib/demo-data";
 import { HandGestureOverlay } from "@/components/HandGestureOverlay";
 import { gesturesAllowed } from "@/game/sim/safety";
 
@@ -142,9 +144,10 @@ export function ScooterParticleScene() {
   }, []);
   const handleRotate = useCallback((amount: number) => setRotation(amount * 0.7), []);
   const handleZoom = useCallback((amount: number) => setZoom(amount), []);
+  const setCameraState = useCallback((enabled: boolean) => setCameraOn(enabled), []);
 
   return (
-    <section className="rg-3d-screen relative isolate min-h-[calc(100dvh-10rem)] overflow-hidden rounded-md border border-accent/50 shadow-[0_0_32px_var(--rideguard-scene-shadow)]" data-scene-ready={ready ? "1" : undefined}>
+    <section className="rg-3d-screen fixed inset-0 z-30 isolate overflow-hidden border border-accent/50 shadow-[0_0_32px_var(--rideguard-scene-shadow)]" data-scene-ready={ready ? "1" : undefined}>
       <Canvas camera={{ position: [0, 0, 7.6], fov: 42 }} dpr={[1, 1.5]} gl={{ alpha: false, antialias: true }} onCreated={({ gl, scene }) => { gl.setClearColor(new THREE.Color().setRGB(4 / 255, 12 / 255, 20 / 255)); scene.background = new THREE.Color().setRGB(4 / 255, 12 / 255, 20 / 255); }}>
         <ambientLight intensity={0.8} />
         <ParticleCloud mode={mode} rotation={rotation} zoom={zoom} onReady={() => setReady(true)} />
@@ -153,13 +156,16 @@ export function ScooterParticleScene() {
         <span className={`h-2.5 w-2.5 rounded-full ${gesturesAllowed(speed) ? "bg-success" : "bg-warning"}`} />
         {gesturesAllowed(speed) ? "PARKED" : "PARK FIRST"}
       </div>
+      <Link to="/" aria-label="Return to Home" className="absolute left-4 top-16 z-10 flex h-12 w-12 items-center justify-center rounded-full border border-accent/50 bg-background/80 text-accent"><ArrowLeft className="h-6 w-6" /></Link>
       <div className="absolute right-4 top-4 z-10 flex items-center gap-2 rounded-md border border-accent/30 bg-background/70 px-3 py-2 text-xs text-foreground backdrop-blur"><ScanLine className="h-4 w-4 text-accent" /> 6,000</div>
       <p className="pointer-events-none absolute bottom-4 left-1/2 z-10 w-max max-w-[80%] -translate-x-1/2 rounded-md bg-background/70 px-3 py-2 text-center text-xs text-foreground/90 backdrop-blur">Parked mode only. Gestures are disabled while riding.</p>
       {tutorial && <div className="absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 items-center gap-3 rounded-full border border-accent/40 bg-background/80 p-4 text-accent shadow-[0_0_24px_var(--rideguard-scene-shadow)]" aria-label="Gesture tutorial"><Hand className="h-10 w-10 animate-pulse" /><MoveHorizontal className="h-7 w-7 animate-pulse" /><ZoomIn className="h-7 w-7 animate-pulse" /><LockKeyhole className="h-7 w-7 animate-pulse" /><button aria-label="Close gesture tutorial" onClick={() => { setTutorial(false); localStorage.setItem("rideguard-gesture-tutorial", "seen"); }} className="ml-1 h-10 w-10 rounded-full border border-accent/40 text-xs">OK</button></div>}
       {!cameraOn && <div className="absolute bottom-16 left-1/2 z-10 flex -translate-x-1/2 gap-3"><span className="rounded-md border border-accent/30 bg-background/70 px-2 py-2 text-accent"><Hand className="h-5 w-5" /></span><span className="rounded-md border border-accent/30 bg-background/70 px-2 py-2 text-accent"><MoveHorizontal className="h-5 w-5" /></span><span className="rounded-md border border-accent/30 bg-background/70 px-2 py-2 text-accent"><ZoomIn className="h-5 w-5" /></span></div>}
       <HandGestureOverlay speed={speed} onAction={handleAction} onRotate={handleRotate} onZoom={handleZoom} />
-      <div className="sr-only">{cameraOn ? "Hand camera on" : "Hand camera off"}</div>
-      <button className="sr-only" onClick={() => setCameraOn(!cameraOn)} aria-label={cameraOn ? "Turn camera off" : "Turn camera on"} />
+      <HandGestureOverlay speed={speed} onAction={handleAction} onRotate={handleRotate} onZoom={handleZoom} onCameraState={setCameraState} />
+      <div className="absolute bottom-44 left-1/2 z-10 flex max-w-[90vw] -translate-x-1/2 gap-2 overflow-x-auto rounded-md border border-accent/20 bg-background/65 p-2 backdrop-blur">
+        {parts.map((part) => <span key={part.key} className="flex shrink-0 items-center gap-1 text-[10px] text-foreground/80"><span className={`h-2 w-2 rounded-full ${part.status === "good" ? "bg-success" : part.status === "check" ? "bg-warning" : "bg-destructive"}`} />{part.label}</span>)}
+      </div>
     </section>
   );
 }
